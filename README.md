@@ -3,8 +3,8 @@
 <div align="center">
 
 
-![visitors](https://visitor-badge.laobi.icu/badge?page_id=MrGiovanni/OncoKit&left_color=%2363C7E6&right_color=%23CEE75F)
-[![GitHub Repo stars](https://img.shields.io/github/stars/MrGiovanni/OncoKit?style=social)](https://github.com/MrGiovanni/OncoKit/stargazers)
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=BodyMaps/OncoKit&left_color=%2363C7E6&right_color=%23CEE75F)
+[![GitHub Repo stars](https://img.shields.io/github/stars/BodyMaps/OncoKit?style=social)](https://github.com/BodyMaps/OncoKit/stargazers)
 <a href="https://twitter.com/bodymaps317">
         <img src="https://img.shields.io/twitter/follow/BodyMaps?style=social" alt="Follow on Twitter" />
 </a><br/>
@@ -22,7 +22,7 @@
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/MrGiovanni/OncoKit.git
+git clone https://github.com/BodyMaps/OncoKit.git
 cd OncoKit
 pip install -r requirements.txt
 ```
