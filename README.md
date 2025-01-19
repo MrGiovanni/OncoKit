@@ -17,9 +17,33 @@
 > [!IMPORTANT]
 > But hey, don't hit that star just yet—the code here is ugly. We're working hard to clean it up and make it something you'll actually enjoy using. Stay tuned!
 
-## Installation
+# Installation
 
 Clone the repository and install dependencies:
+
+<details>
+<summary style="margin-left: 25px;">[Optional 1] Install Anaconda on Linux</summary>
+<div style="margin-left: 25px;">
+    
+```bash
+wget https://repo.anaconda.com/archive/Anaconda3-2024.06-1-Linux-x86_64.sh
+bash Anaconda3-2024.06-1-Linux-x86_64.sh -b -p ./anaconda3
+./anaconda3/bin/conda init
+source ~/.bashrc
+```
+</div>
+</details>
+
+<details>
+<summary style="margin-left: 25px;">[Optional 2] Create A Virtual Environment</summary>
+<div style="margin-left: 25px;">
+    
+```bash
+conda create -n kit python=3.12 -y
+conda activate kit
+```
+</div>
+</details>
 
 ```bash
 git clone https://github.com/BodyMaps/OncoKit.git
@@ -27,7 +51,7 @@ cd OncoKit
 pip install -r requirements.txt
 ```
 
-## Related Papers
+# Related Articles
 
 ```
 @article{bassi2025radgpt,
@@ -83,6 +107,6 @@ pip install -r requirements.txt
 }
 ```
 
-## Acknowledgement
+# Acknowledgement
 
 This work was supported by the Lustgarten Foundation for Pancreatic Cancer Research and the McGovern Foundation. 
