@@ -110,6 +110,8 @@ def main(args):
         os.makedirs(args.avi_save_path)
 
     folder_names = [name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name))]
+    folder_names = sorted(folder_names)
+
     print('>> Converting {} cases.'.format(len(folder_names)))
 
     if args.num_core > 0:
