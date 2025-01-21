@@ -7,7 +7,10 @@ python create_lesion_mask.py --dataset_path /path/to/AbdomenAtlasPre \
 2. Merge all ***_lesion.nii.gz, ***_tumor.nii.gz, ***_cyst.nii.gz (ignore pancreatic_pdac.nii.gz, pancreatic_cyst.nii.gz and pancreatic_pnet.nii.gz) into a single lesion.nii.gz
 3. Do not create lesion.nii.gz if doctors have not annotated the case.
 
-TODO: add functionality for multiprocessing
+TODO: 
+1. add functionality for multiprocessing
+2. change name
+3. add progressing bar
 """
 
 import os
