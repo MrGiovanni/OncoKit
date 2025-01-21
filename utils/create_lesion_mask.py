@@ -1,7 +1,7 @@
 """
 python create_lesion_mask.py --dataset_path /path/to/AbdomenAtlasPre \
-                             --classification_labels_csv /path/to/abdomenatlas_classification_labels.csv \
-                             --process_ids_txt /path/to/AbdomenAtlas2.0.txt >> lesion_mask_creation.log
+                             --classification_labels_csv ./abdomenatlas_classification_labels.csv \
+                             --process_ids_txt ./case_id/AbdomenAtlas2.0.txt >> ./logs/lesion_mask_creation.log
 
 1. Create a 0-mask lesion.nii.gz if doctors mark the case as "N"
 2. Merge all ***_lesion.nii.gz, ***_tumor.nii.gz, ***_cyst.nii.gz (ignore pancreatic_pdac.nii.gz, pancreatic_cyst.nii.gz and pancreatic_pnet.nii.gz) into a single lesion.nii.gz
