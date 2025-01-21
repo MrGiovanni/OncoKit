@@ -1,16 +1,10 @@
 """
-python create_lesion_mask.py --dataset_path /path/to/AbdomenAtlasPre \
-                             --classification_labels_csv ./abdomenatlas_classification_labels.csv \
-                             --process_ids_txt ./case_id/AbdomenAtlas2.0.txt >> ./logs/lesion_mask_creation.log
+python create_lesion_masks.py --dataset_path /data2/wenxuan/Project/AbdomenAtlasDatasetProfiler/AbdomenAtlasPre --classification_labels_csv ./abdomenatlas_classification_labels.csv --process_ids_txt ./case_id/AbdomenAtlas2.0.txt --max_workers 20 >> ./logs/lesion_masks_creation.log
 
 1. Create a 0-mask lesion.nii.gz if doctors mark the case as "N"
 2. Merge all ***_lesion.nii.gz, ***_tumor.nii.gz, ***_cyst.nii.gz (ignore pancreatic_pdac.nii.gz, pancreatic_cyst.nii.gz and pancreatic_pnet.nii.gz) into a single lesion.nii.gz
 3. Do not create lesion.nii.gz if doctors have not annotated the case.
 
-TODO: 
-1. add functionality for multiprocessing
-2. change name
-3. add progressing bar
 """
 
 import os
@@ -18,6 +12,8 @@ import argparse
 import pandas as pd
 import nibabel as nib
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
 
 def load_case_metadata(csv_file):
     """
@@ -54,21 +50,27 @@ def create_empty_lesion_masks(segmentations_path, liver_img, row):
             organ_lesion_path = os.path.join(segmentations_path, f'{organ.lower()}_lesion.nii.gz')
             empty_img = nib.Nifti1Image(empty_data, liver_img.affine, liver_img.header)
             empty_img.set_data_dtype(np.uint8)
+            empty_img.get_data_dtype(finalize=True)
             nib.save(empty_img, organ_lesion_path)
-            print(f"created empty mask: {organ_lesion_path}")
+            print(f"created empty mask: {organ_lesion_path}", flush=True)
 
 def get_lesion_files(segmentations_path):
     """
     Retrieve a list of lesion-related files to merge.
+    Only includes files ending with _lesion.nii.gz, _tumor.nii.gz, or _cyst.nii.gz.
+    Excludes files starting with "_" and specific pancreatic lesion files.
     
     Args:
         segmentations_path (str): path to the "segmentations" folder.
     """
     return [
         f for f in os.listdir(segmentations_path)
-        if ('_lesion.nii.gz' in f or '_tumor.nii.gz' in f or '_cyst.nii.gz') and
-           not (f.startswith('pancreatic_pdac') or f.startswith('pancreatic_cyst') or f.startswith('pancreatic_pnet')) and
-           not f.startswith('_')
+        if (
+            f.endswith('_lesion.nii.gz') or f.endswith('_tumor.nii.gz') or f.endswith('_cyst.nii.gz')
+        ) and not (
+            f.startswith('_') or
+            f in {'pancreatic_pdac.nii.gz', 'pancreatic_cyst.nii.gz', 'pancreatic_pnet.nii.gz'}
+        )
     ]
 
 def merge_lesion_files(segmentations_path, liver_img, lesion_files):
@@ -87,13 +89,14 @@ def merge_lesion_files(segmentations_path, liver_img, lesion_files):
         if lesion_img.shape == combined_data.shape:
             combined_data = np.logical_or(combined_data, lesion_img.get_fdata()).astype(np.uint8)
         else:
-            print(f"shape mismatch for {lesion_file}, skipping")
+            print(f"shape mismatch for {lesion_file}, skipping", flush=True)
     
     combined_lesion_path = os.path.join(segmentations_path, 'lesion.nii.gz')
     combined_img = nib.Nifti1Image(combined_data, liver_img.affine, liver_img.header)
     combined_img.set_data_dtype(np.uint8)
+    combined_img.get_data_dtype(finalize=True)
     nib.save(combined_img, combined_lesion_path)
-    print(f"created combined lesion file: {combined_lesion_path}")
+    print(f"created combined lesion file: {combined_lesion_path}", flush=True)
 
 def process_case(input_folder, case_id, classification_data):
     """
@@ -104,43 +107,49 @@ def process_case(input_folder, case_id, classification_data):
     liver_path = os.path.join(segmentations_path, 'liver.nii.gz')
     
     if not os.path.isdir(case_path):
-        print(f"case directory not found: {case_id}, skipping")
+        print(f"case directory not found: {case_id}, skipping", flush=True)
         return
     
     if not os.path.isfile(liver_path):
-        print(f"liver file not found for case {case_id}, skipping")
+        print(f"liver file not found for case {case_id}, skipping", flush=True)
         return
     
     liver_img = nib.load(liver_path)
-    create_empty_lesion_masks(segmentations_path, liver_img, classification_data.loc[classification_data['BDMAP_ID'] == case_id].iloc[0])
+    if case_id in classification_data['BDMAP_ID'].values:
+        classification_row = classification_data.loc[classification_data['BDMAP_ID'] == case_id].iloc[0]
+        create_empty_lesion_masks(segmentations_path, liver_img, classification_row)
 
     lesion_files = get_lesion_files(segmentations_path)
     if lesion_files:
         merge_lesion_files(segmentations_path, liver_img, lesion_files)
     else:
-        print(f"no lesion files found for case {case_id}, skipping lesion.nii.gz creation.")
+        print(f"no lesion files found for case {case_id}, skipping lesion.nii.gz creation.", flush=True)
 
-def process_abdomenatlas(input_folder, csv_file, ids_txt):
+def process_abdomenatlas(input_folder, csv_file, ids_txt, max_workers):
     """
     Process selected cases in the AbdomenAtlas dataset.
     """
     classification_data = load_case_metadata(csv_file)
     selected_ids = load_ids_to_process(ids_txt)
 
-    for case_id in selected_ids:
-        if case_id in classification_data['BDMAP_ID'].values:
-            process_case(input_folder, case_id, classification_data)
-        else:
-            print(f"case ID {case_id} not found in classification data, skipping")
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(process_case, input_folder, case_id, classification_data)
+            for case_id in selected_ids
+        ]
+        
+        for _ in tqdm(futures, desc="Processing cases", total=len(futures)):
+            pass
 
 def main():
     parser = argparse.ArgumentParser(description="process AbdomenAtlas cases.")
     parser.add_argument("--dataset_path", type=str, required=True, help="path to the AbdomenAtlasPre folder.")
     parser.add_argument("--classification_labels_csv", type=str, required=True, help="path to the classification labels csv file.")
     parser.add_argument("--process_ids_txt", type=str, required=True, help="path to the txt file with IDs to process.")
+    parser.add_argument("--max_workers", type=int, default=os.cpu_count(), help="Number of workers to use for multiprocessing.")
     args = parser.parse_args()
     
-    process_abdomenatlas(args.dataset_path, args.classification_labels_csv, args.process_ids_txt)
+    process_abdomenatlas(args.dataset_path, args.classification_labels_csv, args.process_ids_txt, args.max_workers)
 
 if __name__ == "__main__":
     main()
