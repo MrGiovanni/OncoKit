@@ -33,6 +33,12 @@ git commit -am "make some comments "
 git push origin master
 ```
 
+##### Merge Updates into Your Local Branch
+```bash
+git fetch
+git pull
+```
+
 # Remotely Jupyter notebook
 ##### 1. Open Cisco AnyConnect Secure Mobility Client
 Type in: `sslvpn.asu.edu` and click `Connect`
