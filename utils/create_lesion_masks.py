@@ -1,5 +1,14 @@
 """
-python create_lesion_masks.py --dataset_path /data2/wenxuan/Project/AbdomenAtlasDatasetProfiler/AbdomenAtlasPre --classification_labels_csv ./abdomenatlas_classification_labels.csv --process_ids_txt ./case_id/AbdomenAtlas2.0.txt --max_workers 20 >> ./logs/lesion_masks_creation.log
+python create_lesion_masks.py --dataset_path /data2/wenxuan/Project/AbdomenAtlasDatasetProfiler/AbdomenAtlasPre --classification_labels_csv ./abdomenatlas_classification_labels.csv --process_ids_txt ./case_id/AbdomenAtlas2.0.txt --max_workers 20 --skip_existing >> ./logs/lesion_masks_creation.log
+
+Explanation for all arguments:
+--dataset_path: change path to where the AbdomenAtlas folder stored
+--classification_labels_csv: no need to change, already the relative path
+--process_ids_txt: no need to change, already the relative path
+--max_workers: number of workers to use for multiprocessing
+--skip_existing: skip cases with existing lesion.nii.gz files
+
+!!!Caution: Removing "--skip_existing" will overwrite existing lesion.nii.gz files for all cases in the process_ids_txt file.
 
 1. Create a 0-mask lesion.nii.gz if doctors mark the case as "N"
 2. Merge all ***_lesion.nii.gz, ***_tumor.nii.gz, ***_cyst.nii.gz (ignore pancreatic_pdac.nii.gz, pancreatic_cyst.nii.gz and pancreatic_pnet.nii.gz) into a single lesion.nii.gz
@@ -12,7 +21,7 @@ import argparse
 import pandas as pd
 import nibabel as nib
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 
 def load_case_metadata(csv_file):
@@ -98,18 +107,23 @@ def merge_lesion_files(segmentations_path, liver_img, lesion_files):
     nib.save(combined_img, combined_lesion_path)
     print(f"created combined lesion file: {combined_lesion_path}", flush=True)
 
-def process_case(input_folder, case_id, classification_data):
+def process_case(input_folder, case_id, classification_data, skip_existing):
     """
     Process a single case: create empty lesion masks and merge lesion files.
     """
     case_path = os.path.join(input_folder, case_id)
     segmentations_path = os.path.join(case_path, 'segmentations')
-    liver_path = os.path.join(segmentations_path, 'liver.nii.gz')
+    lesion_path = os.path.join(segmentations_path, 'lesion.nii.gz')
     
     if not os.path.isdir(case_path):
         print(f"case directory not found: {case_id}, skipping", flush=True)
         return
     
+    if skip_existing and os.path.isfile(lesion_path):
+        print(f"skipping case {case_id} as lesion.nii.gz already exists.", flush=True)
+        return
+    
+    liver_path = os.path.join(segmentations_path, 'liver.nii.gz')
     if not os.path.isfile(liver_path):
         print(f"liver file not found for case {case_id}, skipping", flush=True)
         return
@@ -125,7 +139,7 @@ def process_case(input_folder, case_id, classification_data):
     else:
         print(f"no lesion files found for case {case_id}, skipping lesion.nii.gz creation.", flush=True)
 
-def process_abdomenatlas(input_folder, csv_file, ids_txt, max_workers):
+def process_abdomenatlas(input_folder, csv_file, ids_txt, max_workers, skip_existing):
     """
     Process selected cases in the AbdomenAtlas dataset.
     """
@@ -133,23 +147,30 @@ def process_abdomenatlas(input_folder, csv_file, ids_txt, max_workers):
     selected_ids = load_ids_to_process(ids_txt)
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = [
-            executor.submit(process_case, input_folder, case_id, classification_data)
+        futures = {
+            executor.submit(process_case, input_folder, case_id, classification_data, skip_existing): case_id
             for case_id in selected_ids
-        ]
-        
-        for _ in tqdm(futures, desc="Processing cases", total=len(futures)):
-            pass
+        }
 
+        # use as_completed to update the progress bar properly
+        with tqdm(total=len(futures), desc="Processing cases") as pbar:
+            for future in as_completed(futures):
+                try:
+                    future.result()  # retrieve results to catch any exceptions
+                except Exception as e:
+                    case_id = futures[future]
+                    print(f"Error processing case {case_id}: {e}", flush=True)
+                pbar.update(1)
 def main():
     parser = argparse.ArgumentParser(description="process AbdomenAtlas cases.")
     parser.add_argument("--dataset_path", type=str, required=True, help="path to the AbdomenAtlasPre folder.")
     parser.add_argument("--classification_labels_csv", type=str, required=True, help="path to the classification labels csv file.")
     parser.add_argument("--process_ids_txt", type=str, required=True, help="path to the txt file with IDs to process.")
-    parser.add_argument("--max_workers", type=int, default=os.cpu_count(), help="Number of workers to use for multiprocessing.")
+    parser.add_argument("--max_workers", type=int, default=os.cpu_count(), help="number of workers to use for multiprocessing.")
+    parser.add_argument("--skip_existing", action="store_true", help="skip cases with existing lesion.nii.gz files.")
     args = parser.parse_args()
     
-    process_abdomenatlas(args.dataset_path, args.classification_labels_csv, args.process_ids_txt, args.max_workers)
+    process_abdomenatlas(args.dataset_path, args.classification_labels_csv, args.process_ids_txt, args.max_workers, args.skip_existing)
 
 if __name__ == "__main__":
     main()
