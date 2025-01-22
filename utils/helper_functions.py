@@ -150,16 +150,7 @@ class_map_abdomenatlas_2_0 = {
 
 # class map for the AbdomenAtlas X dataset
 class_map_abdomenatlas_x = {
-    1: 'liver',
-    2: 'liver_lesion',
-    3: 'pancreas',
-    4: 'pancreatic_lesion',
-    5: 'kidney_left',
-    6: 'kidney_right',
-    7: 'kidney_lesion',
-    8: 'kidney_tumor',
-    9: 'kidney_cyst',
-    10: 'colon_lesion',
+    1: 'lesion',
     }
 
 # class map for the AbdomenAtlas ImageCAS dataset
