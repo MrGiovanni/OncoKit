@@ -132,7 +132,7 @@ def event(pid, args):
                             )
             
         # Save combined labels
-        combined_labels, affine, header = load_mask(pid, args.class_maps[0], args.destination_datapath)
+        combined_labels, affine, header = load_mask(pid, args.class_maps[1], args.destination_datapath)
         combined_labels.fill(0)
         for cid, class_name in args.class_maps.items():
             mask, _, _ = load_mask(pid, class_name, args.destination_datapath)
@@ -185,7 +185,7 @@ def event(pid, args):
                                 )
             
             # Save combined labels
-            combined_labels, affine, header = load_mask(pid, args.class_maps[0], args.destination_datapath)
+            combined_labels, affine, header = load_mask(pid, args.class_maps[1], args.destination_datapath)
             combined_labels.fill(0)
             for cid, class_name in args.class_maps.items():
                 mask, _, _ = load_mask(pid, class_name, args.destination_datapath)
