@@ -21,6 +21,7 @@
 - Submit many jobs: ```while [ $(myjobs | wc -l) < 1000 ]; do echo 'hi'; sleep 5s; done```
 - Delete jobs: ```fuser -k /dev/nvidia*```
 - Kill all processes for the user: ```pkill -u zzhou82```
+- Print logs on-the-fly: ```print(f"printing!!!", flush=True)```
 
 # Use Github in Linux
 ```bash
