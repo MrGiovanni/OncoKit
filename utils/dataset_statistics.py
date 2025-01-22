@@ -15,10 +15,12 @@ from helper_functions import *
 def event(pid, args):
 
     num_slices = count_num_slices(pid, args.datapath)
+    shape = get_shape(pid, args.datapath)
+    spacing = get_spacing(pid, args.datapath)
 
     with open(os.path.join(args.csvpath, args.csvname+'.csv'), 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow([pid, num_slices])
+        writer.writerow([pid, shape, spacing, num_slices])
 
 def main(args):
 
@@ -28,7 +30,7 @@ def main(args):
         os.makedirs(args.csvpath)
     with open(os.path.join(args.csvpath, args.csvname+'.csv'), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['Patient ID', 'Number of Slices'])
+        writer.writerow(['Patient ID', 'Number of Slices', 'Shape', 'Spacing'])
 
     folder_names = [name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name))]
     # folder_names = sorted(folder_names)
