@@ -229,7 +229,7 @@ def generate_new_version(args):
         args.id_txt = '3.0'
     elif 'X' in args.version:
         args.class_maps = class_map_abdomenatlas_x
-        args.id_txt = 'X'
+        args.id_txt = '2.0'
     elif 'imagecas' in args.version:
         args.class_maps = class_map_abdomenatlas_imagecas
         args.id_txt = 'ImageCAS'

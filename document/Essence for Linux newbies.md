@@ -20,7 +20,8 @@
 - Check the storage: ```du -B1 -cs /Volumes/GoogleDrive/*```
 - Submit many jobs: ```while [ $(myjobs | wc -l) < 1000 ]; do echo 'hi'; sleep 5s; done```
 - Delete jobs: ```fuser -k /dev/nvidia*```
-- Kill all processes for the user: ```pkill -u zzhou82```
+- Kill all CPU processes for the user: ```pkill -u zzhou82```
+- Print logs on-the-fly: ```print(f"printing!!!", flush=True)```
 
 # Use Github in Linux
 ```bash
@@ -31,6 +32,12 @@ git clone https://github.com/MrGiovanni/ModelsGenesis.git
 git add .
 git commit -am "make some comments "
 git push origin master
+```
+
+##### Merge Updates into Your Local Branch
+```bash
+git fetch
+git pull
 ```
 
 # Remotely Jupyter notebook
