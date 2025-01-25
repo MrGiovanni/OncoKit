@@ -10,6 +10,15 @@ import h5py
 
 
 def niigz2h5(in_path):
+
+    def varifyh5(filename): # read the h5 file to see if the conversion is finished or not
+        try:
+            with h5py.File(filename, "r") as hf:   # can read successfully
+                pass
+            return True
+        except OSError:     # transform not complete
+            return False
+
     def saveh5(filename):
         save_dtype = 'uint8' if "segmentations" in filename else "int16"
         # load ct to convert
@@ -37,17 +46,21 @@ def niigz2h5(in_path):
         os.makedirs(os.path.join(output_path_h5, "segmentations"), exist_ok=True)   # prepare to convert labels
         segmentation_paths = glob.glob(os.path.join(in_path, "segmentations", "*.nii.gz"))
         num_labels = len(segmentation_paths) # for checking
+        assert len(num_labels) > 0
 
     # check if had been transformed (for resuming)
-    if os.path.exists(os.path.join(output_path_h5, "ct.h5")):
+    output_path_h5_filename = os.path.join(output_path_h5, "ct.h5")
+    if os.path.exists(output_path_h5_filename) and varifyh5(output_path_h5_filename):   # exist and finished
         if has_labels:
-            if len(glob.glob(os.path.join(output_path_h5, "segmentations", "*.h5"))) == num_labels:    
+            label_h5_paths = glob.glob(os.path.join(output_path_h5, "segmentations", "*.h5"))
+            if len(label_h5_paths) == num_labels and all([varifyh5(path) for path in label_h5_paths]):    
                 return
             else:       # has labels but not all the labels have been transformed --> still need converting
                 pass
         else:
             return
-
+          
+    # converting nii.gz to h5 files!
     saveh5("ct")    # convert nii.gz to h5 (int16)
     if has_labels:
         for segmentation_path in segmentation_paths:
