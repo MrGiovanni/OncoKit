@@ -40,12 +40,18 @@ from PyPDF2 import PdfReader, PdfWriter, PageObject
 # Step 1: Read Excel and Filter Information
 def read_excel(file_path):
     """
-    Reads the Excel file and returns the full DataFrame.
+    Reads the Excel or CSV file and returns the full DataFrame.
     """
-    data = pd.read_excel(file_path, engine="openpyxl")
-    if "BDMAP ID" not in data.columns:
-        raise ValueError("The Excel file must contain a 'BDMAP ID' column.")
-    return data
+    try:
+        if file_path.endswith(".csv"):
+            data = pd.read_csv(file_path)
+        else:
+            data = pd.read_excel(file_path, engine="openpyxl")
+        if "BDMAP ID" not in data.columns:
+            raise ValueError("The file must contain a 'BDMAP ID' column.")
+        return data
+    except Exception as e:
+        raise ValueError(f"Error reading the file: {e}")
 
 def reorient_to_ras(nifti_image):
     """
@@ -304,22 +310,46 @@ def generate_pdf_with_template(
     temp_pdf.drawString(left_margin, y_position, "IMAGING DETAIL")
     y_position -= line_height
 
-    imaging_left = [1, 2]
-    imaging_right = [5, 6]
+    # Define column indices for imaging details
+    imaging_left = [1, 2]  # Example: Columns B and C for the left side
+    imaging_right = [5, 6]  # Example: Other imaging details for the right side
 
+    # Process imaging details for columns B and C (left side)
     left_y = y_position
     right_y = y_position
 
     for col in imaging_left:
         header, value = column_headers[col], extracted_data.iloc[col]
-        content = f"{header}: {value if not pd.isna(value) else 'N/A'}"
+        if col == 1:  # Special handling for column index B
+            if pd.notna(value):  # Check if the value is not NaN
+                try:
+                    # Process column B: Extract numbers, round each to 1 decimal, and format as a list
+                    value = str(value)  # Ensure value is string
+                    numbers = [float(num) for num in value.replace('[', '').replace(']', '').split() if num.replace('.', '', 1).isdigit()]
+                    if numbers:
+                        # Round each number to 1 decimal place
+                        processed_numbers = [round(num, 1) for num in numbers]
+                        value = f"[{' '.join(map(str, processed_numbers))}]"
+                    else:
+                        value = "N/A"  # Default if no valid number is found
+                except ValueError:
+                    value = "N/A"  # Handle invalid numeric conversion
+            else:
+                value = "N/A"  # Default if NaN
+        else:  # For column C or any other column
+            value = value if pd.notna(value) else "N/A"  # Default to "N/A" if value is NaN
+
+        # Format and display the content for the left side
+        content = f"{header}: {value}"
         left_y = write_wrapped_text(left_margin, left_y, content)
 
+    # Process imaging details for the right side (e.g., columns E and F)
     for col in imaging_right:
         header, value = column_headers[col], extracted_data.iloc[col]
-        content = f"{header}: {value if not pd.isna(value) else 'N/A'}"
+        content = f"{header}: {value if pd.notna(value) else 'N/A'}"
         right_y = write_wrapped_text(width / 2, right_y, content)
 
+    # Update the y_position after processing imaging details
     y_position = min(left_y, right_y) - section_spacing
 
     # Section 2: AI Measurements
