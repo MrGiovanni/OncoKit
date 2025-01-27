@@ -279,7 +279,7 @@ def generate_pdf_with_template(
 
 # Draw the centered title
     temp_pdf.drawString(center_x, y_position, "MEDICAL REPORT")
-    y_position -= 30  # Adjust spacing below the title 
+    y_position -= 30  # Adjust spacing below the title
 
 # Replace all instances of data with table_data in the context of draw_table.
     # Section 1a: Patient Information
@@ -357,23 +357,23 @@ def generate_pdf_with_template(
     temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
     y_position -= line_height
     table_data = [
-        ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"], 
+        ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"],
         [
-            "Liver", 
-            extracted_data.iloc[7], 
-            "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]), 
+            "Liver",
+            extracted_data.iloc[7],
+            "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]),
             extracted_data.iloc[8]
         ],
         [
-            "Pancreas", 
-            extracted_data.iloc[23], 
-            "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]), 
+            "Pancreas",
+            extracted_data.iloc[23],
+            "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]),
             extracted_data.iloc[24]
         ],
         [
-            "Kidney", 
-            extracted_data.iloc[40], 
-            "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]), 
+            "Kidney",
+            extracted_data.iloc[40],
+            "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]),
             extracted_data.iloc[43]
         ],
     ]
