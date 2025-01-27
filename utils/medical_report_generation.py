@@ -39,19 +39,31 @@ from PyPDF2 import PdfReader, PdfWriter, PageObject
 
 # Step 1: Read Excel and Filter Information
 def read_excel(file_path):
-    """
-    Reads the Excel or CSV file and returns the full DataFrame.
-    """
     try:
+        # Ensure the file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        # Load the file based on its extension
         if file_path.endswith(".csv"):
             data = pd.read_csv(file_path)
-        else:
+        elif file_path.endswith((".xlsx", ".xls")):
             data = pd.read_excel(file_path, engine="openpyxl")
+        else:
+            raise ValueError(f"Unsupported file format. Expected .csv, .xlsx, or .xls but got: {file_path}")
+
+        # Ensure the required 'BDMAP ID' column exists
         if "BDMAP ID" not in data.columns:
             raise ValueError("The file must contain a 'BDMAP ID' column.")
+
         return data
+    
+    except FileNotFoundError as fnf_error:
+        raise fnf_error
+    except ValueError as val_error:
+        raise val_error
     except Exception as e:
-        raise ValueError(f"Error reading the file: {e}")
+        raise Exception(f"An unexpected error occurred while reading the file: {e}")
 
 def reorient_to_ras(nifti_image):
     """
@@ -279,7 +291,7 @@ def generate_pdf_with_template(
 
 # Draw the centered title
     temp_pdf.drawString(center_x, y_position, "MEDICAL REPORT")
-    y_position -= 30  # Adjust spacing below the title
+    y_position -= 30  # Adjust spacing below the title 
 
 # Replace all instances of data with table_data in the context of draw_table.
     # Section 1a: Patient Information
@@ -357,23 +369,23 @@ def generate_pdf_with_template(
     temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
     y_position -= line_height
     table_data = [
-        ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"],
+        ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"], 
         [
-            "Liver",
-            extracted_data.iloc[7],
-            "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]),
+            "Liver", 
+            extracted_data.iloc[7], 
+            "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]), 
             extracted_data.iloc[8]
         ],
         [
-            "Pancreas",
-            extracted_data.iloc[23],
-            "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]),
+            "Pancreas", 
+            extracted_data.iloc[23], 
+            "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]), 
             extracted_data.iloc[24]
         ],
         [
-            "Kidney",
-            extracted_data.iloc[40],
-            "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]),
+            "Kidney", 
+            extracted_data.iloc[40], 
+            "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]), 
             extracted_data.iloc[43]
         ],
     ]
