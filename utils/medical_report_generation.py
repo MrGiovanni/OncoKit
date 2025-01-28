@@ -627,8 +627,7 @@ def process_folder(task):
         )
 
         # Step 6: Return success message
-        # return f"Successfully processed folder: {folder_name}"
-        return
+        return f"Successfully processed folder: {folder_name}"
 
     except Exception as e:
         # Log the error to a file and return an error message
@@ -641,6 +640,7 @@ def process_folder(task):
         temp_pdf_path = os.path.join(args.output_dir, f"temp_{folder_name}.pdf")
         if os.path.exists(temp_pdf_path):
             os.remove(temp_pdf_path)
+
 def main(args):
     """
     Main function to process multiple folders using multiprocessing.
