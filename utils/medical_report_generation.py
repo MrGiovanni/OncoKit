@@ -627,7 +627,8 @@ def process_folder(task):
         )
 
         # Step 6: Return success message
-        return f"Successfully processed folder: {folder_name}"
+        # return f"Successfully processed folder: {folder_name}"
+        return
 
     except Exception as e:
         # Log the error to a file and return an error message
