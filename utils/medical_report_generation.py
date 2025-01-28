@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 FEATURES:
 1. Extracts metadata from an Excel file for each BDMAP ID (folder).
@@ -36,6 +37,8 @@ ARGUMENTS:
 
 """
 
+=======
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
 import os
 import SimpleITK as sitk
 import nibabel as nib
@@ -49,7 +52,10 @@ from PyPDF2 import PdfReader, PdfWriter, PageObject
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 import multiprocessing 
+<<<<<<< HEAD
 from functools import partial
+=======
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
 
 # Step 1: Read Excel and Filter Information
 def read_excel(file_path):
@@ -538,6 +544,7 @@ def remove_blank_pages(pdf_path):
         writer.write(output_file)
 
 
+<<<<<<< HEAD
 def prepare_task(row, base_folder, column_headers, args):
     """
     Prepares a single task for a folder.
@@ -596,12 +603,40 @@ def process_folder(task):
         # Step 5: Generate the PDF report (Key Images section will be skipped if `masks` is None)
         output_pdf = os.path.join(args.output_dir, f"{folder_name}.pdf")
 
+=======
+def process_folder(args):
+    """
+    Process a single folder to generate the medical report PDF.
+    """
+    try:
+        folder_name, folder_path, row, column_headers, global_args = args
+
+        # Define file paths
+        ct_path = os.path.join(folder_path, "ct.nii.gz")
+        masks = {
+            "liver": os.path.join(folder_path, "segmentations", "liver_lesion.nii.gz"),
+            "pancreas": os.path.join(folder_path, "segmentations", "pancreatic_lesion.nii.gz"),
+            "kidney": os.path.join(folder_path, "segmentations", "kidney_lesion.nii.gz"),
+        }
+        output_pdf = os.path.join(global_args.output_dir, f"{folder_name}.pdf")
+        temp_pdf_path = "temp_content.pdf"  # Path for the temporary PDF
+
+        # Validate input files
+        required_files = [ct_path] + list(masks.values())
+        for file in required_files:
+            if not os.path.exists(file) or os.path.getsize(file) == 0:
+                print(f"Skipping {folder_name}: Missing or invalid file: {file}")
+                return
+
+        # Generate the PDF report
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
         generate_pdf_with_template(
             output_pdf=output_pdf,
             folder_name=folder_name,
             extracted_data=row,
             column_headers=column_headers,
             ct_path=ct_path,
+<<<<<<< HEAD
             masks=masks,  # Pass valid masks or None
             template_pdf=args.template_pdf,
         )
@@ -620,6 +655,31 @@ def process_folder(task):
         temp_file_path = "temp_content.pdf"
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+=======
+            masks=masks,
+            template_pdf=global_args.template_pdf,
+        )
+
+        # Ensure `temp_content.pdf` is created before proceeding
+        if not os.path.exists(temp_pdf_path):
+            raise FileNotFoundError(f"temp_content.pdf was not created for {folder_name}")
+
+        # Remove blank pages from the generated PDF
+        remove_blank_pages(output_pdf)
+
+        print(f"Successfully processed folder: {folder_name}")
+
+    except Exception as e:
+        # Log the error to a file
+        with open("error_log.txt", "a") as log_file:
+            log_file.write(f"Error processing folder {folder_name}: {str(e)}\n")
+        print(f"Error processing folder {folder_name}: {e}")
+
+    finally:
+        # Clean up the temporary file if it exists
+        if os.path.exists("temp_content.pdf"):
+            os.remove("temp_content.pdf")
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
 
 def main(args):
     """
@@ -633,6 +693,7 @@ def main(args):
         data = read_excel(args.excel_file)
 
         # Prepare tasks for multiprocessing
+<<<<<<< HEAD
         prepare_partial = partial(prepare_task, base_folder=args.base_folder, column_headers=data.columns, args=args)
         tasks = list(filter(None, map(prepare_partial, [row for _, row in data.iterrows()])))
 
@@ -652,6 +713,28 @@ def main(args):
                 folder = futures[future]
                 try:
                     print(future.result())
+=======
+        tasks = []
+        for _, row in data.iterrows():
+            folder_name = row["BDMAP ID"]
+            folder_path = os.path.join(args.base_folder, folder_name)
+
+            # Only process existing folders
+            if os.path.exists(folder_path):
+                tasks.append((folder_name, folder_path, row, data.columns, args))
+
+        # Use ProcessPoolExecutor to process folders in parallel
+        num_core = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
+        print(f">> {num_core} CPU cores are secured.")
+
+        with ProcessPoolExecutor(max_workers=num_core) as executor:
+            futures = {executor.submit(process_folder, task): task[0] for task in tasks}
+
+            for future in tqdm(as_completed(futures), total=len(futures), ncols=80):
+                folder = futures[future]
+                try:
+                    future.result()
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
                 except Exception as e:
                     print(f"Error processing {folder}: {e}")
 
@@ -659,7 +742,10 @@ def main(args):
         # Log general errors
         with open("error_log.txt", "a") as log_file:
             log_file.write(f"General error: {str(e)}\n")
+<<<<<<< HEAD
         print(f"General error: {e}")
+=======
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
 
 if __name__ == "__main__":
     # Define command-line arguments
@@ -669,9 +755,17 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, required=True, help="Directory to save the generated PDF reports.")
     parser.add_argument("--template_pdf", type=str, required=True, help="Path to the blank PDF template.")
     parser.add_argument("--num_core", type=int, default=0, help="Number of CPU cores to use. Defaults to all available cores.")
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
     # Parse the arguments
     args = parser.parse_args()
 
     # Run the main function
+<<<<<<< HEAD
     main(args)
+=======
+    main(args)
+>>>>>>> ab67d1aa7bbcbed05b02dbf5f1d51be2475ba878
