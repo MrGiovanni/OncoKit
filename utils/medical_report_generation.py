@@ -1,4 +1,3 @@
-
 """
 FEATURES:
 1. Extracts metadata from an Excel file for each BDMAP ID (folder).
@@ -7,13 +6,25 @@ FEATURES:
 4. Removes blank pages from the generated PDFs.
 5. Handles multiple folders automatically using command-line arguments.
 
-- Required libraries: SimpleITK, nibabel, numpy, matplotlib, pandas, argparse, reportlab, PyPDF2, openpyxl
+- Required libraries: SimpleITK, nibabel, numpy, matplotlib, pandas, argparse, reportlab, PyPDF2, openpyxl,tqdm,
 
+- Workflow
+Read Input Data: The script reads the metadata and segmentation details from the provided Excel file.
+Prepare Tasks: Each folder is treated as an individual task, and tasks are prepared based on the metadata.
+Process Folders:
+Check inclusion criteria for segmentation masks.
+Validate the presence of CT files.
+Generate PDF reports with relevant sections.
+Skip the Key Images section if no valid masks are found, but still generate the report.
+Output: Saves the reports as PDF files in the specified output directory.
+Error Handling: Logs errors to error_log.txt without interrupting the processing of other folders.
 USAGE:
-Run this script from the command line with the following arguments:
+
+-Run this script from the command line with the following arguments:
 
     python <script_name>.py --excel_file <EXCEL_FILE> --base_folder <BASE_FOLDER> --output_dir <OUTPUT_DIR> --template_pdf <TEMPLATE_PDF>
     python medical_report_generation.py --excel_file /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/PDF_template.pdf
+
 
 ARGUMENTS:
 1. `--excel_file`: Path to the Excel file containing metadata (must include a 'BDMAP ID' column).
@@ -35,23 +46,27 @@ import argparse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PyPDF2 import PdfReader, PdfWriter, PageObject
-
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from tqdm import tqdm
+import multiprocessing 
+from functools import partial
 
 # Step 1: Read Excel and Filter Information
 def read_excel(file_path):
-    """
-    Reads the Excel or CSV file and returns the full DataFrame.
-    """
-    try:
-        if file_path.endswith(".csv"):
-            data = pd.read_csv(file_path)
-        else:
-            data = pd.read_excel(file_path, engine="openpyxl")
-        if "BDMAP ID" not in data.columns:
-            raise ValueError("The file must contain a 'BDMAP ID' column.")
-        return data
-    except Exception as e:
-        raise ValueError(f"Error reading the file: {e}")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError("File not found: {}".format(file_path))
+
+    if file_path.endswith(".csv"):
+        data = pd.read_csv(file_path, low_memory=False)  # Suppress DtypeWarning
+    elif file_path.endswith((".xlsx", ".xls")):
+        data = pd.read_excel(file_path, engine="openpyxl")
+    else:
+        raise ValueError("Unsupported file format. Expected .csv, .xlsx, or .xls.")
+
+    if "BDMAP ID" not in data.columns:
+        raise ValueError("The file must contain a 'BDMAP ID' column.")
+
+    return data
 
 def reorient_to_ras(nifti_image):
     """
@@ -110,10 +125,8 @@ def get_most_labeled_slice(ct_path, mask_path, output_png, contrast_min=-150, co
         plt.axis('off')
         plt.savefig(output_png, bbox_inches="tight", pad_inches=0)
         plt.close()
-        print(f"Saved overlay with contour to: {output_png}")
         return True
-    except Exception as e:
-        print(f"Error generating overlay image: {e}")
+    except Exception:
         return False
 
 def create_overlay_image(ct_path, mask_path, output_path, color="red"):
@@ -123,7 +136,6 @@ def create_overlay_image(ct_path, mask_path, output_path, color="red"):
     try:
         return get_most_labeled_slice(ct_path, mask_path, output_path)
     except Exception as e:
-        print(f"Error in create_overlay_image: {e}")
         return False
 
 # Helper Function to Zoom into Labeled Area
@@ -185,10 +197,8 @@ def zoom_into_labeled_area(ct_path, mask_path, output_path, color="red"):
         plt.axis("off")
         plt.savefig(output_path, bbox_inches="tight")
         plt.close()
-        print(f"Saved zoomed-in image to: {output_path}")
         return True
     except Exception as e:
-        print(f"Error generating zoomed-in image: {e}")
         return False
 
 # PDF Generation
@@ -220,6 +230,48 @@ def draw_table(pdf, table_data, x, y, total_width, row_height, bold=False):
             pdf.showPage()
             y = letter[1] - 100
     return y
+
+def start_new_page(pdf, height, top_margin=100):
+    """
+    Start a new page in the PDF and reset the y_position.
+    Args:
+        pdf: The canvas object for the PDF.
+        height: The height of the PDF page.
+        top_margin: The top margin to leave on the new page.
+    Returns:
+        y_position: The reset y_position for the new page.
+    """
+    pdf.showPage()  # Start a new page
+    pdf.setFont("Helvetica", 12)  # Reset font to default
+    y_position = height - top_margin  # Reset y_position
+    return y_position
+
+def extract_and_format_number(value):
+    """
+    Extracts the numeric part from a string, rounds it to 1 decimal, and converts to a float.
+    Handles content with brackets or extra text (e.g., '34.567 (note)').
+
+    Args:
+        value (str): The content to process.
+    
+    Returns:
+        float: Rounded numeric value with one decimal.
+        str: 'N/A' if no valid numeric value is found.
+    """
+    if pd.isna(value):  # Handle NaN values
+        return "N/A"
+    
+    try:
+        # Extract the first number from the string (handles brackets and extra text)
+        import re
+        number_match = re.search(r"[-+]?\d*\.?\d+", str(value))
+        if number_match:
+            number = float(number_match.group())  # Extract numeric part
+            return round(number, 1)  # Round to one decimal
+        else:
+            return "N/A"  # No numeric part found
+    except Exception:
+        return "N/A"  # Handle unexpected errors
 
 def generate_pdf_with_template(
     output_pdf, folder_name, extracted_data, column_headers, ct_path, masks,
@@ -267,6 +319,7 @@ def generate_pdf_with_template(
             temp_pdf.drawString(x, y, current_line.strip())
             y -= line_height
         return y
+     
 
     temp_pdf.setFont("Helvetica-Bold", 26)  # Set font to bold and large
 
@@ -404,13 +457,13 @@ def generate_pdf_with_template(
             reset_page()
     y_position -= section_spacing
 
-   # Section 5: Key Images
-    # Filter based on Excel columns
+    # Section 5: Key Images
     include_liver = not (pd.isna(extracted_data.iloc[11]) or extracted_data.iloc[11] == 0)
     include_pancreas = not (pd.isna(extracted_data.iloc[27]) or extracted_data.iloc[27] == 0)
     include_kidney = not (pd.isna(extracted_data.iloc[46]) or extracted_data.iloc[46] == 0)
 
     if include_liver or include_pancreas or include_kidney:
+        y_position = start_new_page(temp_pdf, height)
         temp_pdf.setFont("Helvetica-Bold", 14)
         temp_pdf.drawString(left_margin, y_position, "KEY IMAGES")
         y_position -= section_spacing
@@ -419,7 +472,6 @@ def generate_pdf_with_template(
             if (organ == "liver" and not include_liver) or \
                (organ == "pancreas" and not include_pancreas) or \
                (organ == "kidney" and not include_kidney):
-                print(f"Skipping {organ} images because the corresponding column is empty or zero.")
                 continue
 
             header = f"{organ.upper()} TUMORS"
@@ -446,9 +498,6 @@ def generate_pdf_with_template(
 
                 # Update y_position after the images
                 y_position -= 220
-    else:
-        print("All Key Images sections are empty; skipping 'KEY IMAGES' entirely.")
-    
 
     temp_pdf.save()
 
@@ -468,7 +517,6 @@ def generate_pdf_with_template(
 
     # Clean up the temporary content PDF
     os.remove(temp_pdf_path)
-    print(f"PDF report generated using template: {output_pdf}")
 
 def remove_blank_pages(pdf_path):
     """
@@ -489,30 +537,94 @@ def remove_blank_pages(pdf_path):
     with open(pdf_path, "wb") as output_file:
         writer.write(output_file)
 
-    print(f"Blank pages removed. Cleaned PDF saved as: {pdf_path}")
 
+def prepare_task(row, base_folder, column_headers, args):
+    """
+    Prepares a single task for a folder.
 
-def process_multiple_folders(excel_file, base_folder, template_pdf, output_dir):
-    data = read_excel(excel_file)
-    for _, row in data.iterrows():
-        folder_name = row["BDMAP ID"]
-        folder_path = os.path.join(base_folder, folder_name)
-        if os.path.exists(folder_path):
-            try:
-                extracted_data, column_headers = row, data.columns
-                ct_path = os.path.join(folder_path, "ct.nii.gz")
-                masks = {
-                    "liver": os.path.join(folder_path, "segmentations", "liver_lesion.nii.gz"),
-                    "pancreas": os.path.join(folder_path, "segmentations", "pancreatic_lesion.nii.gz"),
-                    "kidney": os.path.join(folder_path, "segmentations", "kidney_lesion.nii.gz"),
-                }
-                output_pdf = os.path.join(output_dir, f"{folder_name}.pdf")
-                generate_pdf_with_template(output_pdf, folder_name, extracted_data, column_headers, ct_path, masks, template_pdf)
-            except Exception as e:
-                print(f"Error processing folder {folder_name}: {e}")
+    Args:
+        row (pd.Series): The row of data corresponding to the folder.
+        base_folder (str): The base folder containing the data.
+        column_headers (list): Column headers of the Excel file.
+        args (Namespace): The command-line arguments.
 
+    Returns:
+        tuple: The task arguments for `process_folder`, or None if the folder does not exist.
+    """
+    folder_name = row["BDMAP ID"]
+    folder_path = os.path.join(base_folder, folder_name)
+
+    if os.path.exists(folder_path):
+        return folder_name, folder_path, row, column_headers, args
+    else:
+        return None
+
+def process_folder(task):
+    """
+    Process a single folder to generate the medical report PDF.
+
+    Args:
+        task (tuple): Contains folder_name, folder_path, row, column_headers, args.
+
+    Returns:
+        str: Status message for the processed folder.
+    """
+    try:
+        folder_name, folder_path, row, column_headers, args = task
+
+        # Step 1: Check mask inclusion based on BDMAP data
+        include_liver = not (pd.isna(row.iloc[11]) or row.iloc[11] == 0)
+        include_pancreas = not (pd.isna(row.iloc[27]) or row.iloc[27] == 0)
+        include_kidney = not (pd.isna(row.iloc[46]) or row.iloc[46] == 0)
+
+        # Step 2: Define paths for the CT file and masks
+        ct_path = os.path.join(folder_path, "ct.nii.gz")
+        masks = {
+            "liver": os.path.join(folder_path, "segmentations", "liver_lesion.nii.gz") if include_liver else None,
+            "pancreas": os.path.join(folder_path, "segmentations", "pancreatic_lesion.nii.gz") if include_pancreas else None,
+            "kidney": os.path.join(folder_path, "segmentations", "kidney_lesion.nii.gz") if include_kidney else None,
+        }
+
+        # Step 3: Remove masks that are not needed or missing
+        masks = {organ: path for organ, path in masks.items() if path and os.path.exists(path)}
+
+        # Step 4: Log if no valid masks are found
+        if not masks:
+            print(f"Skipping Key Images section for {folder_name}: No valid masks found.")
+            masks = None  # Indicate no masks for key images
+
+        # Step 5: Generate the PDF report (Key Images section will be skipped if `masks` is None)
+        output_pdf = os.path.join(args.output_dir, f"{folder_name}.pdf")
+
+        generate_pdf_with_template(
+            output_pdf=output_pdf,
+            folder_name=folder_name,
+            extracted_data=row,
+            column_headers=column_headers,
+            ct_path=ct_path,
+            masks=masks,  # Pass valid masks or None
+            template_pdf=args.template_pdf,
+        )
+
+        # Step 6: Return success message
+        return f"Successfully processed folder: {folder_name}"
+
+    except Exception as e:
+        # Log the error to a file and return an error message
+        with open("error_log.txt", "a") as log_file:
+            log_file.write(f"Error processing folder {folder_name}: {str(e)}\n")
+        return f"Error processing folder {folder_name}: {e}"
+
+    finally:
+        # Step 7: Clean up any temporary files
+        temp_file_path = "temp_content.pdf"
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
 def main(args):
+    """
+    Main function to process multiple folders using multiprocessing.
+    """
     # Ensure the output directory exists
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -520,53 +632,34 @@ def main(args):
         # Read all data from the Excel file
         data = read_excel(args.excel_file)
 
-        # Loop through all rows in the Excel file
-        for _, row in data.iterrows():
-            # Extract the BDMAP ID (folder name)
-            folder_name = row["BDMAP ID"]
-            # Construct the path to the folder
-            folder_path = os.path.join(args.base_folder, folder_name)
+        # Prepare tasks for multiprocessing
+        prepare_partial = partial(prepare_task, base_folder=args.base_folder, column_headers=data.columns, args=args)
+        tasks = list(filter(None, map(prepare_partial, [row for _, row in data.iterrows()])))
 
-            # Check if the folder exists
-            if os.path.exists(folder_path):
+        if not tasks:
+            print("No valid folders found to process.")
+            return
+
+        # Use ProcessPoolExecutor to process folders in parallel
+        num_cores = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
+        print(f">> {num_cores} CPU cores are secured.")
+
+        with ProcessPoolExecutor(max_workers=num_cores) as executor:
+            futures = {executor.submit(process_folder, task): task[0] for task in tasks}
+
+            # Display progress bar
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Processing Folders", ncols=80):
+                folder = futures[future]
                 try:
-                    # Extract the CT and segmentation mask paths
-                    ct_path = os.path.join(folder_path, "ct.nii.gz")
-                    masks = {
-                        "liver": os.path.join(folder_path, "segmentations", "liver_lesion.nii.gz"),
-                        "pancreas": os.path.join(folder_path, "segmentations", "pancreatic_lesion.nii.gz"),
-                        "kidney": os.path.join(folder_path, "segmentations", "kidney_lesion.nii.gz"),
-                    }
-                    # Construct the output PDF path
-                    output_pdf = os.path.join(args.output_dir, f"{folder_name}.pdf")
-
-                    # Extract data for the current row
-                    extracted_data = row
-
-                    # Generate the PDF report
-                    generate_pdf_with_template(
-                        output_pdf=output_pdf,
-                        folder_name=folder_name,
-                        extracted_data=extracted_data,
-                        column_headers=data.columns,
-                        ct_path=ct_path,
-                        masks=masks,
-                        template_pdf=args.template_pdf,
-                    )
-                    print(f"PDF report generated: {output_pdf}")
-
-                    # Remove blank pages from the generated PDF
-                    remove_blank_pages(output_pdf)
-                    print(f"Blank pages removed and final PDF saved: {output_pdf}")
-
+                    print(future.result())
                 except Exception as e:
-                    print(f"Error processing folder '{folder_name}': {e}")
-            else:
-                print(f"Folder '{folder_name}' does not exist. Skipping.")
+                    print(f"Error processing {folder}: {e}")
 
     except Exception as e:
-        print(f"Error: {e}")
-
+        # Log general errors
+        with open("error_log.txt", "a") as log_file:
+            log_file.write(f"General error: {str(e)}\n")
+        print(f"General error: {e}")
 
 if __name__ == "__main__":
     # Define command-line arguments
@@ -575,10 +668,10 @@ if __name__ == "__main__":
     parser.add_argument("--base_folder", type=str, required=True, help="Base directory containing CT and segmentation folders.")
     parser.add_argument("--output_dir", type=str, required=True, help="Directory to save the generated PDF reports.")
     parser.add_argument("--template_pdf", type=str, required=True, help="Path to the blank PDF template.")
+    parser.add_argument("--num_core", type=int, default=0, help="Number of CPU cores to use. Defaults to all available cores.")
 
     # Parse the arguments
     args = parser.parse_args()
 
     # Run the main function
     main(args)
-        
