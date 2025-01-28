@@ -275,248 +275,263 @@ def extract_and_format_number(value):
 
 def generate_pdf_with_template(
     output_pdf, folder_name, extracted_data, column_headers, ct_path, masks,
-    template_pdf,
+    template_pdf, temp_pdf_path
 ):
     """
     Generate a PDF report using a blank PDF template for each page.
+
+    Args:
+        output_pdf (str): Path to save the final output PDF.
+        folder_name (str): Folder name being processed.
+        extracted_data (pd.Series): Data extracted for this folder.
+        column_headers (list): Headers from the input data file.
+        ct_path (str): Path to the CT file.
+        masks (dict): Paths to valid segmentation masks.
+        template_pdf (str): Path to the blank template PDF.
+        temp_pdf_path (str): Path to save the temporary content PDF (unique per process).
     """
-    # Temporary output for the content
-    temp_pdf_path = "temp_content.pdf"
-    temp_pdf = canvas.Canvas(temp_pdf_path, pagesize=letter)
-    width, height = letter
-    left_margin, top_margin = 50, 100
-    line_height, section_spacing = 12, 30
-    total_table_width = width - 2 * left_margin
-    y_position = height - top_margin
+    try:
+        temp_pdf = canvas.Canvas(temp_pdf_path, pagesize=letter)
+        width, height = letter
+        left_margin, top_margin = 50, 100
+        line_height, section_spacing = 12, 30
+        total_table_width = width - 2 * left_margin
+        y_position = height - top_margin
 
-    def reset_page():
-        nonlocal y_position
-        temp_pdf.showPage()
-        y_position = height - 120
-        temp_pdf.setFont("Helvetica", 10)
+        def reset_page():
+            nonlocal y_position
+            temp_pdf.showPage()
+            y_position = height - 120
+            temp_pdf.setFont("Helvetica", 10)
 
-    def check_and_reset_page(space_needed):
-        nonlocal y_position
-        if y_position - space_needed < 50:
-            reset_page()
+        def check_and_reset_page(space_needed):
+            nonlocal y_position
+            if y_position - space_needed < 50:
+                reset_page()
 
-    def write_wrapped_text(x, y, content, bold=False, font_size=10, max_width=None):
-        temp_pdf.setFont("Helvetica-Bold" if bold else "Helvetica", font_size)
-        words = content.split()
-        current_line = ""
-        max_width = max_width or width - left_margin * 2
-        for word in words:
-            if temp_pdf.stringWidth(current_line + word + " ", "Helvetica", font_size) > max_width:
+        def write_wrapped_text(x, y, content, bold=False, font_size=10, max_width=None):
+            temp_pdf.setFont("Helvetica-Bold" if bold else "Helvetica", font_size)
+            words = content.split()
+            current_line = ""
+            max_width = max_width or width - left_margin * 2
+            for word in words:
+                if temp_pdf.stringWidth(current_line + word + " ", "Helvetica", font_size) > max_width:
+                    temp_pdf.drawString(x, y, current_line.strip())
+                    y -= line_height
+                    current_line = f"{word} "
+                    if y < 50:
+                        reset_page()
+                        y = height - top_margin
+                else:
+                    current_line += f"{word} "
+            if current_line:
                 temp_pdf.drawString(x, y, current_line.strip())
                 y -= line_height
-                current_line = f"{word} "
-                if y < 50:
-                    reset_page()
-                    y = height - top_margin
-            else:
-                current_line += f"{word} "
-        if current_line:
-            temp_pdf.drawString(x, y, current_line.strip())
-            y -= line_height
-        return y
+            return y
+
      
 
-    temp_pdf.setFont("Helvetica-Bold", 26)  # Set font to bold and large
+        temp_pdf.setFont("Helvetica-Bold", 26)  # Set font to bold and large
 
-# Calculate the width of the text to center it
-    text_width = temp_pdf.stringWidth("MEDICAL REPORT", "Helvetica-Bold", 26)
-    center_x = (width - text_width) / 2  # Calculate x-coordinate to center the text
+    # Calculate the width of the text to center it
+        text_width = temp_pdf.stringWidth("MEDICAL REPORT", "Helvetica-Bold", 26)
+        center_x = (width - text_width) / 2  # Calculate x-coordinate to center the text
 
-# Adjust y_position for custom placement of the title
-    y_position = height - 130  # Adjust 100 to control the distance from the top
+    # Adjust y_position for custom placement of the title
+        y_position = height - 130  # Adjust 100 to control the distance from the top
 
-# Draw the centered title
-    temp_pdf.drawString(center_x, y_position, "MEDICAL REPORT")
-    y_position -= 30  # Adjust spacing below the title 
+    # Draw the centered title
+        temp_pdf.drawString(center_x, y_position, "MEDICAL REPORT")
+        y_position -= 30  # Adjust spacing below the title 
 
-# Replace all instances of data with table_data in the context of draw_table.
-    # Section 1a: Patient Information
-    temp_pdf.setFont("Helvetica-Bold", 12)
-    y_position -= 0
-    temp_pdf.drawString(left_margin, y_position, "PATIENT INFORMATION")
-    y_position -= line_height
+    # Replace all instances of data with table_data in the context of draw_table.
+        # Section 1a: Patient Information
+        temp_pdf.setFont("Helvetica-Bold", 12)
+        y_position -= 0
+        temp_pdf.drawString(left_margin, y_position, "PATIENT INFORMATION")
+        y_position -= line_height
 
-    # Replace NaN values with "N/A" in patient information
-    left_content = [
-        ["BDMAP ID", folder_name],
-        ["Age", int(extracted_data["age"]) if not pd.isna(extracted_data["age"]) else "N/A"]
-]
-    right_content = [
-        ["Sex", extracted_data["sex"] if not pd.isna(extracted_data["sex"]) else "N/A"]
+        # Replace NaN values with "N/A" in patient information
+        left_content = [
+            ["BDMAP ID", folder_name],
+            ["Age", int(extracted_data["age"]) if not pd.isna(extracted_data["age"]) else "N/A"]
     ]
+        right_content = [
+            ["Sex", extracted_data["sex"] if not pd.isna(extracted_data["sex"]) else "N/A"]
+        ]
 
-    left_y, right_y = y_position, y_position
-    for item in left_content:
-        left_y = write_wrapped_text(left_margin, left_y, f"{item[0]}: {item[1]}")
-    for item in right_content:
-        right_y = write_wrapped_text(width / 2, right_y, f"{item[0]}: {item[1]}")
+        left_y, right_y = y_position, y_position
+        for item in left_content:
+            left_y = write_wrapped_text(left_margin, left_y, f"{item[0]}: {item[1]}")
+        for item in right_content:
+            right_y = write_wrapped_text(width / 2, right_y, f"{item[0]}: {item[1]}")
 
-    y_position = min(left_y, right_y) - section_spacing
+        y_position = min(left_y, right_y) - section_spacing
 
-    # Section 1b: Imaging Details
-    temp_pdf.setFont("Helvetica-Bold", 12)
-    temp_pdf.drawString(left_margin, y_position, "IMAGING DETAIL")
-    y_position -= line_height
+        # Section 1b: Imaging Details
+        temp_pdf.setFont("Helvetica-Bold", 12)
+        temp_pdf.drawString(left_margin, y_position, "IMAGING DETAIL")
+        y_position -= line_height
 
-    # Define column indices for imaging details
-    imaging_left = [1, 2]  # Example: Columns B and C for the left side
-    imaging_right = [5, 6]  # Example: Other imaging details for the right side
+        # Define column indices for imaging details
+        imaging_left = [1, 2]  # Example: Columns B and C for the left side
+        imaging_right = [5, 6]  # Example: Other imaging details for the right side
 
-    # Process imaging details for columns B and C (left side)
-    left_y = y_position
-    right_y = y_position
+        # Process imaging details for columns B and C (left side)
+        left_y = y_position
+        right_y = y_position
 
-    for col in imaging_left:
-        header, value = column_headers[col], extracted_data.iloc[col]
-        if col == 1:  # Special handling for column index B
-            if pd.notna(value):  # Check if the value is not NaN
-                try:
-                    # Process column B: Extract numbers, round each to 1 decimal, and format as a list
-                    value = str(value)  # Ensure value is string
-                    numbers = [float(num) for num in value.replace('[', '').replace(']', '').split() if num.replace('.', '', 1).isdigit()]
-                    if numbers:
-                        # Round each number to 1 decimal place
-                        processed_numbers = [round(num, 1) for num in numbers]
-                        value = f"[{' '.join(map(str, processed_numbers))}]"
-                    else:
-                        value = "N/A"  # Default if no valid number is found
-                except ValueError:
-                    value = "N/A"  # Handle invalid numeric conversion
-            else:
-                value = "N/A"  # Default if NaN
-        else:  # For column C or any other column
-            value = value if pd.notna(value) else "N/A"  # Default to "N/A" if value is NaN
+        for col in imaging_left:
+            header, value = column_headers[col], extracted_data.iloc[col]
+            if col == 1:  # Special handling for column index B
+                if pd.notna(value):  # Check if the value is not NaN
+                    try:
+                        # Process column B: Extract numbers, round each to 1 decimal, and format as a list
+                        value = str(value)  # Ensure value is string
+                        numbers = [float(num) for num in value.replace('[', '').replace(']', '').split() if num.replace('.', '', 1).isdigit()]
+                        if numbers:
+                            # Round each number to 1 decimal place
+                            processed_numbers = [round(num, 1) for num in numbers]
+                            value = f"[{' '.join(map(str, processed_numbers))}]"
+                        else:
+                            value = "N/A"  # Default if no valid number is found
+                    except ValueError:
+                        value = "N/A"  # Handle invalid numeric conversion
+                else:
+                    value = "N/A"  # Default if NaN
+            else:  # For column C or any other column
+                value = value if pd.notna(value) else "N/A"  # Default to "N/A" if value is NaN
 
-        # Format and display the content for the left side
-        content = f"{header}: {value}"
-        left_y = write_wrapped_text(left_margin, left_y, content)
+            # Format and display the content for the left side
+            content = f"{header}: {value}"
+            left_y = write_wrapped_text(left_margin, left_y, content)
 
-    # Process imaging details for the right side (e.g., columns E and F)
-    for col in imaging_right:
-        header, value = column_headers[col], extracted_data.iloc[col]
-        content = f"{header}: {value if pd.notna(value) else 'N/A'}"
-        right_y = write_wrapped_text(width / 2, right_y, content)
+        # Process imaging details for the right side (e.g., columns E and F)
+        for col in imaging_right:
+            header, value = column_headers[col], extracted_data.iloc[col]
+            content = f"{header}: {value if pd.notna(value) else 'N/A'}"
+            right_y = write_wrapped_text(width / 2, right_y, content)
 
-    # Update the y_position after processing imaging details
-    y_position = min(left_y, right_y) - section_spacing
+        # Update the y_position after processing imaging details
+        y_position = min(left_y, right_y) - section_spacing
 
-    # Section 2: AI Measurements
-    temp_pdf.setFont("Helvetica-Bold", 12)
-    temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
-    y_position -= line_height
-    table_data = [
-        ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"], 
-        [
-            "Liver", 
-            extracted_data.iloc[7], 
-            "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]), 
-            extracted_data.iloc[8]
-        ],
-        [
-            "Pancreas", 
-            extracted_data.iloc[23], 
-            "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]), 
-            extracted_data.iloc[24]
-        ],
-        [
-            "Kidney", 
-            extracted_data.iloc[40], 
-            "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]), 
-            extracted_data.iloc[43]
-        ],
-    ]
-    row_height = 30
-    y_position = draw_table(temp_pdf, table_data, left_margin, y_position, total_table_width, row_height, bold=False)
-    y_position -= section_spacing
-
-    # Section 3: Narrative Report
-    temp_pdf.setFont("Helvetica-Bold", 12)
-    temp_pdf.drawString(left_margin, y_position, "NARRATIVE REPORT")
-    y_position -= line_height
-    narrative_report = str(extracted_data.iloc[71])
-    for line in narrative_report.split("\n"):
-        y_position = write_wrapped_text(left_margin, y_position, line.strip())
-        if y_position < 50:
-            temp_pdf.showPage()
-            y_position = height - top_margin
-    y_position -= section_spacing
-
-    # Section 4: Structured Report
-    temp_pdf.setFont("Helvetica-Bold", 12)
-    temp_pdf.drawString(left_margin, y_position, "STRUCTURED REPORT")
-    y_position -= line_height
-    structured_report = str(extracted_data.iloc[70])
-    for line in structured_report.split("\n"):
-        y_position = write_wrapped_text(left_margin, y_position, line.strip())
-        if y_position < 50:
-            reset_page()
-    y_position -= section_spacing
-
-    # Section 5: Key Images
-    include_liver = not (pd.isna(extracted_data.iloc[11]) or extracted_data.iloc[11] == 0)
-    include_pancreas = not (pd.isna(extracted_data.iloc[27]) or extracted_data.iloc[27] == 0)
-    include_kidney = not (pd.isna(extracted_data.iloc[46]) or extracted_data.iloc[46] == 0)
-
-    if include_liver or include_pancreas or include_kidney:
-        y_position = start_new_page(temp_pdf, height)
-        temp_pdf.setFont("Helvetica-Bold", 14)
-        temp_pdf.drawString(left_margin, y_position, "KEY IMAGES")
+        # Section 2: AI Measurements
+        temp_pdf.setFont("Helvetica-Bold", 12)
+        temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
+        y_position -= line_height
+        table_data = [
+            ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"], 
+            [
+                "Liver", 
+                extracted_data.iloc[7], 
+                "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]), 
+                extracted_data.iloc[8]
+            ],
+            [
+                "Pancreas", 
+                extracted_data.iloc[23], 
+                "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]), 
+                extracted_data.iloc[24]
+            ],
+            [
+                "Kidney", 
+                extracted_data.iloc[40], 
+                "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]), 
+                extracted_data.iloc[43]
+            ],
+        ]
+        row_height = 30
+        y_position = draw_table(temp_pdf, table_data, left_margin, y_position, total_table_width, row_height, bold=False)
         y_position -= section_spacing
 
-        for organ, mask_path in masks.items():
-            if (organ == "liver" and not include_liver) or \
-               (organ == "pancreas" and not include_pancreas) or \
-               (organ == "kidney" and not include_kidney):
-                continue
+        # Section 3: Narrative Report
+        temp_pdf.setFont("Helvetica-Bold", 12)
+        temp_pdf.drawString(left_margin, y_position, "NARRATIVE REPORT")
+        y_position -= line_height
+        narrative_report = str(extracted_data.iloc[71])
+        for line in narrative_report.split("\n"):
+            y_position = write_wrapped_text(left_margin, y_position, line.strip())
+            if y_position < 50:
+                temp_pdf.showPage()
+                y_position = height - top_margin
+        y_position -= section_spacing
 
-            header = f"{organ.upper()} TUMORS"
-            check_and_reset_page(space_needed=line_height)
+        # Section 4: Structured Report
+        temp_pdf.setFont("Helvetica-Bold", 12)
+        temp_pdf.drawString(left_margin, y_position, "STRUCTURED REPORT")
+        y_position -= line_height
+        structured_report = str(extracted_data.iloc[70])
+        for line in structured_report.split("\n"):
+            y_position = write_wrapped_text(left_margin, y_position, line.strip())
+            if y_position < 50:
+                reset_page()
+        y_position -= section_spacing
 
-            temp_pdf.setFont("Helvetica", 12)
-            temp_pdf.drawString(left_margin, y_position, header)
-            y_position -= line_height
+        # Section 5: Key Images
+        include_liver = not (pd.isna(extracted_data.iloc[11]) or extracted_data.iloc[11] == 0)
+        include_pancreas = not (pd.isna(extracted_data.iloc[27]) or extracted_data.iloc[27] == 0)
+        include_kidney = not (pd.isna(extracted_data.iloc[46]) or extracted_data.iloc[46] == 0)
 
-            # Check space for the first image (overlay image)
-            check_and_reset_page(space_needed=220)
+        if include_liver or include_pancreas or include_kidney:
+            y_position = start_new_page(temp_pdf, height)
+            temp_pdf.setFont("Helvetica-Bold", 14)
+            temp_pdf.drawString(left_margin, y_position, "KEY IMAGES")
+            y_position -= section_spacing
 
-            # Add overlay image
-            if create_overlay_image(ct_path, mask_path, f"/tmp/{organ}_overlay.png", color="red"):
-                temp_pdf.drawImage(f"/tmp/{organ}_overlay.png", left_margin, y_position - 200, width=200, height=200)
+            for organ, mask_path in masks.items():
+                if (organ == "liver" and not include_liver) or \
+                (organ == "pancreas" and not include_pancreas) or \
+                (organ == "kidney" and not include_kidney):
+                    continue
 
-                # Check space for the second image (zoomed image)
+                header = f"{organ.upper()} TUMORS"
+                check_and_reset_page(space_needed=line_height)
+
+                temp_pdf.setFont("Helvetica", 12)
+                temp_pdf.drawString(left_margin, y_position, header)
+                y_position -= line_height
+
+                # Check space for the first image (overlay image)
                 check_and_reset_page(space_needed=220)
 
-                # Add zoomed image
-                zoom_success = zoom_into_labeled_area(ct_path, mask_path, f"/tmp/{organ}_zoomed.png", color="red")
-                if zoom_success:
-                    temp_pdf.drawImage(f"/tmp/{organ}_zoomed.png", left_margin + 250, y_position - 205, width=210, height=210)
+                # Add overlay image
+                if create_overlay_image(ct_path, mask_path, f"/tmp/{organ}_overlay.png", color="red"):
+                    temp_pdf.drawImage(f"/tmp/{organ}_overlay.png", left_margin, y_position - 200, width=200, height=200)
 
-                # Update y_position after the images
-                y_position -= 220
+                    # Check space for the second image (zoomed image)
+                    check_and_reset_page(space_needed=220)
 
-    temp_pdf.save()
+                    # Add zoomed image
+                    zoom_success = zoom_into_labeled_area(ct_path, mask_path, f"/tmp/{organ}_zoomed.png", color="red")
+                    if zoom_success:
+                        temp_pdf.drawImage(f"/tmp/{organ}_zoomed.png", left_margin + 250, y_position - 205, width=210, height=210)
 
-    template_reader = PdfReader(template_pdf)
-    content_reader = PdfReader(temp_pdf_path)
-    writer = PdfWriter()
+                    # Update y_position after the images
+                    y_position -= 220
 
-    for page in content_reader.pages:
-        template_page = template_reader.pages[0]  # Use the first page of the template
-        merged_page = PageObject.create_blank_page(width=template_page.mediabox.width, height=template_page.mediabox.height)
-        merged_page.merge_page(template_page)
-        merged_page.merge_page(page)
-        writer.add_page(merged_page)
+        temp_pdf.save() 
 
-    with open(output_pdf, "wb") as final_pdf:
-        writer.write(final_pdf)
+        template_reader = PdfReader(template_pdf)
+        content_reader = PdfReader(temp_pdf_path)
+        writer = PdfWriter()
 
-    # Clean up the temporary content PDF
-    os.remove(temp_pdf_path)
+        for page in content_reader.pages:
+            template_page = template_reader.pages[0]  # Use the first page of the template
+            merged_page = PageObject.create_blank_page(width=template_page.mediabox.width, height=template_page.mediabox.height)
+            merged_page.merge_page(template_page)
+            merged_page.merge_page(page)
+            writer.add_page(merged_page)
+
+        with open(output_pdf, "wb") as final_pdf:
+           writer.write(final_pdf)
+
+    except Exception as e:
+        raise RuntimeError(f"Error generating PDF for {folder_name}: {e}")
+
+    finally:
+        if os.path.exists(temp_pdf_path):
+            os.remove(temp_pdf_path)
+
 
 def remove_blank_pages(pdf_path):
     """
@@ -596,6 +611,10 @@ def process_folder(task):
         # Step 5: Generate the PDF report (Key Images section will be skipped if `masks` is None)
         output_pdf = os.path.join(args.output_dir, f"{folder_name}.pdf")
 
+        # Temporary buffer names for this process
+        temp_pdf_path = os.path.join(args.output_dir, f"temp_{folder_name}.pdf")
+
+        # Call the PDF generation function
         generate_pdf_with_template(
             output_pdf=output_pdf,
             folder_name=folder_name,
@@ -604,6 +623,7 @@ def process_folder(task):
             ct_path=ct_path,
             masks=masks,  # Pass valid masks or None
             template_pdf=args.template_pdf,
+            temp_pdf_path=temp_pdf_path,  # Use unique temp file for this process
         )
 
         # Step 6: Return success message
@@ -617,10 +637,9 @@ def process_folder(task):
 
     finally:
         # Step 7: Clean up any temporary files
-        temp_file_path = "temp_content.pdf"
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
+        temp_pdf_path = os.path.join(args.output_dir, f"temp_{folder_name}.pdf")
+        if os.path.exists(temp_pdf_path):
+            os.remove(temp_pdf_path)
 def main(args):
     """
     Main function to process multiple folders using multiprocessing.
