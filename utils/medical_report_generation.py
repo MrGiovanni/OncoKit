@@ -605,7 +605,7 @@ def process_folder(task):
 
         # Step 4: Log if no valid masks are found
         if not masks:
-            print(f"Skipping Key Images section for {folder_name}: No valid masks found.")
+            # print(f"Skipping Key Images section for {folder_name}: No valid masks found.")
             masks = None  # Indicate no masks for key images
 
         # Step 5: Generate the PDF report (Key Images section will be skipped if `masks` is None)
