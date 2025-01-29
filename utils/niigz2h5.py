@@ -1,3 +1,17 @@
+"""
+For FELIX data:
+```bash
+python niigz2h5.py --output_dir /path/to/output_dir -A -V
+```
+
+For all the BDMAP data in the folder:
+```bash
+python niigz2h5.py --output_dir /path/to/output_dir
+```
+"""
+
+
+
 import os
 import numpy as np
 import nibabel as nib
@@ -14,9 +28,13 @@ def niigz2h5(in_path):
     def varifyh5(filename): # read the h5 file to see if the conversion is finished or not
         try:
             with h5py.File(filename, "r") as hf:   # can read successfully
+                data = hf["image"]
+                shape_test = data.shape
+                slice_test = data[3:6]
                 pass
             return True
-        except OSError:     # transform not complete
+        except:     # transform not complete
+            print(filename, "has error")
             return False
 
     def saveh5(filename):
@@ -24,17 +42,22 @@ def niigz2h5(in_path):
         # load ct to convert
         try:
             nii_array = nib.load(os.path.join(in_path, f"{filename}.nii.gz")).get_fdata()    # float64, but save as int16 in h5
+            nii_shape = nii_array.shape     # not all CT is 512 x 512
         except:
             print(f"broken {filename}", in_path)
             return
 
         # save as h5 file in int16
-        with h5py.File(os.path.join(output_path_h5, f"{filename}.h5"), 'w') as hf:
-            hf.create_dataset('image', 
-                data=nii_array, 
-                compression='gzip',     
-                chunks=(512, 512, 1),   # chunks for better loading speed!
-                dtype=save_dtype)   # int16 for ct, uint8 for segmentations
+        try:
+            with h5py.File(os.path.join(output_path_h5, f"{filename}.h5"), 'w') as hf:
+                hf.create_dataset('image', 
+                    data=nii_array, 
+                    compression='gzip',     
+                    chunks=(nii_shape[0], nii_shape[1], 1),   # chunks for better loading speed!
+                    dtype=save_dtype)   # int16 for ct, uint8 for segmentations
+        except ValueError:
+            print(os.path.join(in_path, f"{filename}.nii.gz"))
+            raise ValueError
     # parse paths
     bdmap_id = in_path.split("/")[-1]   
     output_path_h5 = os.path.join(args.output_dir, bdmap_id)
@@ -73,6 +96,7 @@ def niigz2h5(in_path):
 
 if __name__ == "__main__":
     train_data_dir = "/mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/"
+    # train_data_dir = "/ccvl/net/ccvl15/tlin67/3DReconstruction/Tianyu/STEP3-ControlNetModel/dataset/data"
     # output_dir = "/ccvl/net/ccvl15/tlin67/Dataset_raw/FELIXtemp/FELIXh5"
 
     # Create ArgumentParser object
