@@ -17,13 +17,13 @@ Validate the presence of CT files.
 Generate PDF reports with relevant sections.
 Skip the Key Images section if no valid masks are found, but still generate the report.
 Output: Saves the reports as PDF files in the specified output directory.
-Error Handling: Logs errors to error_log.txt without interrupting the processing of other folders.
+Error Handling: Logs errors to error_log.txt without interrupting the processing of other folders, error_log.tex in output_folder.
 USAGE:
 
 -Run this script from the command line with the following arguments:
 
     python <script_name>.py --excel_file <EXCEL_FILE> --base_folder <BASE_FOLDER> --output_dir <OUTPUT_DIR> --template_pdf <TEMPLATE_PDF>
-    python medical_report_generation.py --excel_file /mnt/T8/project/OncoKit/utils/data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf /mnt/T8/project/OncoKit/utils/data_demo/PDF_template.pdf
+    python medical_report_generation.py --excel_file /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/PDF_template.pdf
 
 
 ARGUMENTS:
@@ -442,21 +442,21 @@ def generate_pdf_with_template(
         temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
         y_position -= line_height
         table_data = [
-            ["", "Organ Volume (cc)", "Total Lesion #", "Total Lesion Volume (cc)"], 
+            ["", "organ Volume (cc)", "total lesion #", "total lesion volume (cc)"], 
             [
-                "Liver", 
+                "liver", 
                 extracted_data.iloc[7], 
                 "N/A" if pd.isna(extracted_data.iloc[11]) else int(extracted_data.iloc[11]), 
                 extracted_data.iloc[8]
             ],
             [
-                "Pancreas", 
+                "pancreas", 
                 extracted_data.iloc[23], 
                 "N/A" if pd.isna(extracted_data.iloc[27]) else int(extracted_data.iloc[27]), 
                 extracted_data.iloc[24]
             ],
             [
-                "Kidney", 
+                "kidney", 
                 extracted_data.iloc[40], 
                 "N/A" if pd.isna(extracted_data.iloc[46]) else int(extracted_data.iloc[46]), 
                 extracted_data.iloc[43]
@@ -703,19 +703,28 @@ def main(args):
 
     try:
         data = read_excel(args.excel_file)
+        num_cores = args.num_core if args.num_core > 0 else min(multiprocessing.cpu_count(), 16)
 
-        prepare_partial = partial(prepare_task, base_folder=args.base_folder, column_headers=data.columns, args=args)
-        tasks = list(filter(None, map(prepare_partial, [row for _, row in data.iterrows()])))
+        # 🔥 STEP 1: PARALLEL TASK PREPARATION WITH PROGRESS BAR
+        tasks = []
+        with ProcessPoolExecutor(max_workers=num_cores) as executor:
+            futures = {
+                executor.submit(prepare_task, row, args.base_folder, data.columns, args): row["BDMAP ID"]
+                for _, row in data.iterrows()
+            }
+
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Preparing Tasks", ncols=80):
+                task = future.result()
+                if task:
+                    tasks.append(task)  # Store valid tasks
 
         if not tasks:
             return  # No valid folders found, exit quietly
 
-        num_cores = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
-
+        # 🔥 STEP 2: PARALLEL PROCESSING OF FOLDERS WITH PROGRESS BAR
         with ProcessPoolExecutor(max_workers=num_cores) as executor:
             futures = {executor.submit(process_folder, task): task[0] for task in tasks}
 
-            # Only show progress bar, no printing of errors/success messages
             for _ in tqdm(as_completed(futures), total=len(futures), desc="Processing Folders", ncols=80):
                 pass  # No print output, only progress bar
 
