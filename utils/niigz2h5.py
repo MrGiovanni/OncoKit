@@ -1,12 +1,12 @@
 """
 For FELIX data:
 ```bash
-python niigz2h5.py --output_dir /path/to/output_dir -A -V
+python niigz2h5.py --input_dir /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --output_dir /path/to/output_dir -A -V
 ```
 
 For all the BDMAP data in the folder:
 ```bash
-python niigz2h5.py --output_dir /path/to/output_dir
+python niigz2h5.py --input_dir /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --output_dir /path/to/output_dir
 ```
 """
 
@@ -95,12 +95,13 @@ def niigz2h5(in_path):
 
 
 if __name__ == "__main__":
-    train_data_dir = "/mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/"
-    # train_data_dir = "/ccvl/net/ccvl15/tlin67/3DReconstruction/Tianyu/STEP3-ControlNetModel/dataset/data"
+    # input_dir = "/mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/"
+    # input_dir = "/ccvl/net/ccvl15/tlin67/3DReconstruction/Tianyu/STEP3-ControlNetModel/dataset/data"
     # output_dir = "/ccvl/net/ccvl15/tlin67/Dataset_raw/FELIXtemp/FELIXh5"
 
     # Create ArgumentParser object
     parser = argparse.ArgumentParser()
+    parser.add_argument("--input_dir", type=str, help="h5 data input folder", required=True)
     parser.add_argument("--output_dir", type=str, help="h5 data output folder", required=True)
     parser.add_argument("-A", action='store_true', help="BDMAP data starts with A ")
     parser.add_argument("-V", action='store_true', help="BDMAP data starts with V ")
@@ -111,7 +112,7 @@ if __name__ == "__main__":
 
     prefixes = [prefix for prefix, enabled in [("BDMAP_A", args.A), ("BDMAP_O", args.O), ("BDMAP_V", args.V)] if enabled]
 
-    paths = sorted([entry.path for entry in os.scandir(train_data_dir) 
+    paths = sorted([entry.path for entry in os.scandir(args.input_dir) 
                 if not prefixes or any(entry.name.startswith(p) for p in prefixes)])     # default: all the data in AbdomenAtlasPro
     
     print(len(paths), "CT scans found in given filtering condition")
