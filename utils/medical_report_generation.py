@@ -50,6 +50,28 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 import multiprocessing 
 from functools import partial
+from PIL import Image
+
+def validate_image(image_path):
+    """
+    Check if an image file is valid and can be opened.
+    
+    Args:
+        image_path (str): Path to the image file.
+
+    Returns:
+        bool: True if valid, False if corrupt or missing.
+    """
+    if not os.path.exists(image_path):
+        return False  # File is missing
+
+    try:
+        with Image.open(image_path) as img:
+            img.verify()  # Verify integrity
+        return True  # Image is valid
+    except Exception:
+        return False  # Image is corrupt
+
 
 # Step 1: Read Excel and Filter Information
 def read_excel(file_path):
@@ -584,9 +606,12 @@ def process_folder(task):
     Returns:
         str: Status message for the processed folder.
     """
-    try:
-        folder_name, folder_path, row, column_headers, args = task
+    folder_name, folder_path, row, column_headers, args = task
 
+    # Define error log path in the output directory
+    error_log_path = os.path.join(args.output_dir, "error_log.txt")
+
+    try:
         # Step 1: Check mask inclusion based on BDMAP data
         include_liver = not (pd.isna(row.iloc[11]) or row.iloc[11] == 0)
         include_pancreas = not (pd.isna(row.iloc[27]) or row.iloc[27] == 0)
@@ -600,86 +625,103 @@ def process_folder(task):
             "kidney": os.path.join(folder_path, "segmentations", "kidney_lesion.nii.gz") if include_kidney else None,
         }
 
-        # Step 3: Remove masks that are not needed or missing
+        # Step 3: Remove missing or invalid masks
         masks = {organ: path for organ, path in masks.items() if path and os.path.exists(path)}
 
-        # Step 4: Log if no valid masks are found
-        if not masks:
-            # print(f"Skipping Key Images section for {folder_name}: No valid masks found.")
-            masks = None  # Indicate no masks for key images
+        # Step 4: Generate overlay and zoomed-in images
+        image_paths = {}
+        corrupt_images = []
 
-        # Step 5: Generate the PDF report (Key Images section will be skipped if `masks` is None)
+        for organ, mask_path in masks.items():
+            overlay_path = f"/tmp/{folder_name}_{organ}_overlay.png"
+            zoomed_path = f"/tmp/{folder_name}_{organ}_zoomed.png"
+
+            overlay_success = create_overlay_image(ct_path, mask_path, overlay_path)
+            zoom_success = zoom_into_labeled_area(ct_path, mask_path, zoomed_path)
+
+            # Validate generated images
+            if overlay_success and validate_image(overlay_path):
+                image_paths[f"{organ}_overlay"] = overlay_path
+            else:
+                corrupt_images.append(f"{organ} overlay image is missing or corrupt")
+
+            if zoom_success and validate_image(zoomed_path):
+                image_paths[f"{organ}_zoomed"] = zoomed_path
+            else:
+                corrupt_images.append(f"{organ} zoomed-in image is missing or corrupt")
+
+        # Step 5: Log issues if images are missing or corrupt
+        if corrupt_images:
+            with open(error_log_path, "a") as log_file:
+                log_file.write(f"Skipping Key Images section for {folder_name} due to errors:\n")
+                for error_msg in corrupt_images:
+                    log_file.write(f"  - {error_msg}\n")
+            masks = None  # Skip Key Images section
+
+        # Step 6: Define output PDF paths
         output_pdf = os.path.join(args.output_dir, f"{folder_name}.pdf")
-
-        # Temporary buffer names for this process
         temp_pdf_path = os.path.join(args.output_dir, f"temp_{folder_name}.pdf")
 
-        # Call the PDF generation function
+        # Step 7: Generate the PDF (excluding Key Images if masks are None)
         generate_pdf_with_template(
             output_pdf=output_pdf,
             folder_name=folder_name,
             extracted_data=row,
             column_headers=column_headers,
             ct_path=ct_path,
-            masks=masks,  # Pass valid masks or None
+            masks=masks if not corrupt_images else None,  # Skip Key Images if errors
             template_pdf=args.template_pdf,
-            temp_pdf_path=temp_pdf_path,  # Use unique temp file for this process
+            temp_pdf_path=temp_pdf_path,
         )
 
-        # Step 6: Return success message
         return f"Successfully processed folder: {folder_name}"
 
     except Exception as e:
-        # Log the error to a file and return an error message
-        with open("error_log.txt", "a") as log_file:
+        # Log errors in the output directory
+        with open(error_log_path, "a") as log_file:
             log_file.write(f"Error processing folder {folder_name}: {str(e)}\n")
         return f"Error processing folder {folder_name}: {e}"
 
     finally:
-        # Step 7: Clean up any temporary files
-        temp_pdf_path = os.path.join(args.output_dir, f"temp_{folder_name}.pdf")
+        # Step 8: Cleanup - remove temp PDF and temporary images
         if os.path.exists(temp_pdf_path):
             os.remove(temp_pdf_path)
+        
+        for image_path in image_paths.values():
+            if os.path.exists(image_path):
+                os.remove(image_path)
 
 def main(args):
     """
     Main function to process multiple folders using multiprocessing.
     """
-    # Ensure the output directory exists
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)  # Ensure output directory exists
+    error_log_path = os.path.join(args.output_dir, "error_log.txt")  # Log file in output directory
+
+    # Clear previous error log
+    open(error_log_path, "w").close()  # Overwrite with an empty file
 
     try:
-        # Read all data from the Excel file
         data = read_excel(args.excel_file)
 
-        # Prepare tasks for multiprocessing
         prepare_partial = partial(prepare_task, base_folder=args.base_folder, column_headers=data.columns, args=args)
         tasks = list(filter(None, map(prepare_partial, [row for _, row in data.iterrows()])))
 
         if not tasks:
-            print("No valid folders found to process.")
-            return
+            return  # No valid folders found, exit quietly
 
-        # Use ProcessPoolExecutor to process folders in parallel
         num_cores = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
-        print(f">> {num_cores} CPU cores are secured.")
 
         with ProcessPoolExecutor(max_workers=num_cores) as executor:
             futures = {executor.submit(process_folder, task): task[0] for task in tasks}
 
-            # Display progress bar
-            for future in tqdm(as_completed(futures), total=len(futures), desc="Processing Folders", ncols=80):
-                folder = futures[future]
-                try:
-                    print(future.result())
-                except Exception as e:
-                    print(f"Error processing {folder}: {e}")
+            # Only show progress bar, no printing of errors/success messages
+            for _ in tqdm(as_completed(futures), total=len(futures), desc="Processing Folders", ncols=80):
+                pass  # No print output, only progress bar
 
     except Exception as e:
-        # Log general errors
-        with open("error_log.txt", "a") as log_file:
+        with open(error_log_path, "a") as log_file:
             log_file.write(f"General error: {str(e)}\n")
-        print(f"General error: {e}")
 
 if __name__ == "__main__":
     # Define command-line arguments
