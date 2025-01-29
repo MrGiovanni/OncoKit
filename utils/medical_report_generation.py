@@ -23,7 +23,7 @@ USAGE:
 -Run this script from the command line with the following arguments:
 
     python <script_name>.py --excel_file <EXCEL_FILE> --base_folder <BASE_FOLDER> --output_dir <OUTPUT_DIR> --template_pdf <TEMPLATE_PDF>
-    python medical_report_generation.py --excel_file /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/PDF_template.pdf
+    python -W ignore medical_report_generation.py --excel_file data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf data_demo/PDF_template.pdf
 
 
 ARGUMENTS:
