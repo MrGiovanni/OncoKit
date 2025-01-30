@@ -703,7 +703,8 @@ def main(args):
 
     try:
         data = read_excel(args.excel_file)
-        num_cores = args.num_core if args.num_core > 0 else min(multiprocessing.cpu_count(), 16)
+        num_cores = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
+        print(f">> Using {num_cores} CPU cores.")
 
         # 🔥 STEP 1: PARALLEL TASK PREPARATION WITH PROGRESS BAR
         tasks = []
