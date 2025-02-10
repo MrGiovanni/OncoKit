@@ -30,7 +30,7 @@ def main(args):
         os.makedirs(args.csvpath)
     with open(os.path.join(args.csvpath, args.csvname+'.csv'), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['Patient ID', 'Number of Slices', 'Shape', 'Spacing'])
+        writer.writerow(['Patient ID', 'Shape', 'Spacing', 'Number of Slices'])
 
     folder_names = [name for name in os.listdir(args.datapath) if os.path.isdir(os.path.join(args.datapath, name))]
     # folder_names = sorted(folder_names)
