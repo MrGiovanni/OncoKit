@@ -5,61 +5,84 @@ python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre 
 python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /Volumes/T9/AbdomenAtlas1.0Mini --ct --mask -v 1.0mini
 
 # 1.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.0 --ct --mask -v 1.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas1.0 --ct -v 1.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas1.0 --mask -v 1.0
-for id in BDMAP_00000339 BDMAP_00001024 BDMAP_00001044 BDMAP_00001230 BDMAP_00001483 BDMAP_00001647 BDMAP_00001992 BDMAP_00002727 BDMAP_00003411 BDMAP_00003888 BDMAP_00004457 BDMAP_00000419 BDMAP_00001032 BDMAP_00001045 BDMAP_00001396 BDMAP_00001636 BDMAP_00001882 BDMAP_00002407 BDMAP_00003292 BDMAP_00003725 BDMAP_00003976 BDMAP_00005047; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.0 --ct --mask -v 1.0 --patientID $id; done
+version_name=AbdomenAtlas1.0
+data_path=/ccvl40/bodymaps
+num_core=62
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name/ --ct --mask -v 1.0 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_only/$version_name/$version_name/ --ct -v 1.0 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/mask_only/$version_name/$version_name/ --mask -v 1.0 --num_core $num_core
 
 # 1.0Mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.0Mini --ct --mask -v 1.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas1.0Mini --ct -v 1.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas1.0Mini --mask -v 1.0mini
-for id in BDMAP_00000339 BDMAP_00001024 BDMAP_00001044 BDMAP_00001230 BDMAP_00001483 BDMAP_00001647 BDMAP_00001992 BDMAP_00002727 BDMAP_00003411 BDMAP_00003888 BDMAP_00004457 BDMAP_00000419 BDMAP_00001032 BDMAP_00001045 BDMAP_00001396 BDMAP_00001636 BDMAP_00001882 BDMAP_00002407 BDMAP_00003292 BDMAP_00003725 BDMAP_00003976 BDMAP_00005047; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.0Mini --ct --mask -v 1.0mini --patientID $id; done
+version_name=AbdomenAtlas1.0Mini
+data_path=/ccvl40/bodymaps
+num_core=62
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name/ --ct --mask -v 1.0mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_only/$version_name/$version_name/ --ct -v 1.0mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/mask_only/$version_name/$version_name/ --mask -v 1.0mini --num_core $num_core
 
 # 1.1
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.1 --ct --mask -v 1.1
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas1.1 --ct -v 1.1
-python -W ignore generate_versions.py --source_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.1/AbdomenAtlas1.1 --mask -v 1.1
-for id in BDMAP_00000339 BDMAP_00001024 BDMAP_00001044 BDMAP_00001230 BDMAP_00001483 BDMAP_00001647 BDMAP_00001992 BDMAP_00002727 BDMAP_00003411 BDMAP_00003888 BDMAP_00004457 BDMAP_00000419 BDMAP_00001032 BDMAP_00001045 BDMAP_00001396 BDMAP_00001636 BDMAP_00001882 BDMAP_00002407 BDMAP_00003292 BDMAP_00003725 BDMAP_00003976 BDMAP_00005047; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.1 --ct --mask -v 1.1 --patientID $id; done
+version_name=AbdomenAtlas1.1
+data_path=/mnt/bodymaps
+num_core=78
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name/ --ct --mask -v 1.1 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_only/$version_name/$version_name/ --ct -v 1.1 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/mask_only/$version_name/$version_name/ --mask -v 1.1 --num_core $num_core
 
 # 1.1Mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.1Mini --ct --mask -v 1.1mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas1.1Mini --ct -v 1.1mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas1.1Mini --mask -v 1.1mini
-for id in BDMAP_00000339 BDMAP_00001024 BDMAP_00001044 BDMAP_00001230 BDMAP_00001483 BDMAP_00001647 BDMAP_00001992 BDMAP_00002727 BDMAP_00003411 BDMAP_00003888 BDMAP_00004457 BDMAP_00000419 BDMAP_00001032 BDMAP_00001045 BDMAP_00001396 BDMAP_00001636 BDMAP_00001882 BDMAP_00002407 BDMAP_00003292 BDMAP_00003725 BDMAP_00003976 BDMAP_00005047; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /ccvl/net/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.1Mini --ct --mask -v 1.1mini --patientID $id; done
+version_name=AbdomenAtlas1.1Mini
+data_path=/mnt/bodymaps
+num_core=78
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name/ --ct --mask -v 1.1mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_only/$version_name/$version_name/ --ct -v 1.1mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/mask_only/$version_name/$version_name/ --mask -v 1.1mini --num_core $num_core
 
 # 2.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas2.0/AbdomenAtlas2.0 --ct --mask -v 2.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas2.0/AbdomenAtlas2.0 --ct -v 2.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas2.0/AbdomenAtlas2.0 --mask -v 2.0
-for id in BDMAP_00001353 BDMAP_00001358; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas2.0/AbdomenAtlas2.0 --mask -v 2.0 --patientID $id; done
+version_name=AbdomenAtlas2.0
+data_path=/mnt/bodymaps
+num_core=70
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v 2.0 --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v 2.0 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v 2.0 --num_core $num_core
 
 # 2.0Mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas2.0Mini/AbdomenAtlas2.0Mini --ct --mask -v 2.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas2.0Mini/AbdomenAtlas2.0Mini --ct -v 2.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas2.0Mini/AbdomenAtlas2.0Mini --mask -v 2.0mini
-for id in BDMAP_00001353 BDMAP_00001358; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas2.0Mini/AbdomenAtlas2.0Mini --mask -v 2.0mini --patientID $id; done
+version_name=AbdomenAtlas2.0Mini
+data_path=/mnt/bodymaps
+num_core=70
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v 2.0mini --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v 2.0mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v 2.0mini --num_core $num_core
 
 # 3.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas3.0/AbdomenAtlas3.0 --ct --mask -v 3.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas3.0/AbdomenAtlas3.0 --ct -v 3.0
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas3.0/AbdomenAtlas3.0 --mask -v 3.0
-for id in BDMAP_00001353 BDMAP_00001358; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas3.0/AbdomenAtlas3.0 --mask -v 3.0 --patientID $id; done
+version_name=AbdomenAtlas3.0
+data_path=/mnt/bodymaps
+num_core=70
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v 3.0 --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v 3.0 --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v 3.0 --num_core $num_core
 
 # 3.0Mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas3.0Mini/AbdomenAtlas3.0Mini --ct --mask -v 3.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_only/AbdomenAtlas3.0Mini/AbdomenAtlas3.0Mini --ct -v 3.0mini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas3.0Mini/AbdomenAtlas3.0Mini --mask -v 3.0mini
-for id in BDMAP_00001353 BDMAP_00001358; do echo $id; python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlas3.0Mini/AbdomenAtlas3.0Mini --mask -v 3.0mini --patientID $id; done
+version_name=AbdomenAtlas3.0Mini
+data_path=/mnt/bodymaps
+num_core=70
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v 3.0mini --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v 3.0mini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v 3.0mini --num_core $num_core
 
 # X
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/imgae_mask/AbdomenAtlasX/AbdomenAtlasX --ct --mask -v X --num_core 60
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlasX/AbdomenAtlasX --mask -v X --num_core 60
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/imgae_mask/AbdomenAtlasX/AbdomenAtlasX --ct --mask -v X --num_core 2 --patientID BDMAP_00002098
+version_name=AbdomenAtlasX
+data_path=/mnt/bodymaps
+num_core=12
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v X --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v X --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v X --num_core $num_core
 
 # XMini
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/imgae_mask/AbdomenAtlasXMini/AbdomenAtlasXMini --ct --mask -v Xmini --num_core 60
-python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlas/mask_only/AbdomenAtlasXMini/AbdomenAtlasXMini --mask -v Xmini --num_core 60
+version_name=AbdomenAtlasXMini
+data_path=/mnt/bodymaps
+num_core=12
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v Xmini --num_core $num_core
+# python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/image_only/$version_name/$version_name --ct -v Xmini --num_core $num_core
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro --destination_datapath $data_path/mask_only/$version_name/$version_name --mask -v Xmini --num_core $num_core
 
 # imagecas
 python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /data/zzhou82/data/ImageCAS --ct --mask -v imagecas
