@@ -88,7 +88,10 @@ python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre 
 python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath /data/zzhou82/data/ImageCAS --ct --mask -v imagecas
 
 # report
-python -W ignore generate_versions.py --source_datapath ../AbdomenAtlasReport --destination_datapath ./Report --ct --mask -v report
+version_name=AbdomenAtlasFMini
+data_path=/mnt/bodymaps
+num_core=12
+python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v Fmini --num_core $num_core
 
 # All in one
 python -W ignore generate_versions.py --source_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlas1.0Mini --destination_datapath /mnt/ccvl15/zzhou82/data/AbdomenAtlas/image_mask --tar_gz_name AbdomenAtlas1.0Mini --all_in_one
@@ -259,6 +262,9 @@ def generate_new_version(args):
     elif 'report' in args.version:
         args.class_maps = class_map_abdomenatlas_report
         args.id_txt = 'Report'
+    elif 'F' in args.version:
+        args.class_maps = class_map_abdomenatlas_report
+        args.id_txt = 'F'
     else:
         raise
 
