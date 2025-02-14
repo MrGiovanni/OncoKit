@@ -90,7 +90,7 @@ python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre 
 # report
 version_name=AbdomenAtlasFMini
 data_path=/mnt/bodymaps
-num_core=12
+num_core=80
 python -W ignore generate_versions.py --source_datapath /mnt/T8/AbdomenAtlasPre --supp_source_datapath /mnt/realccvl15/zzhou82/data/AbdomenAtlasPro/ --destination_datapath $data_path/image_mask/$version_name/$version_name --ct --mask -v Fmini --num_core $num_core
 
 # All in one
