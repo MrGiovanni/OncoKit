@@ -23,7 +23,7 @@ USAGE:
 -Run this script from the command line with the following arguments:
 
     python <script_name>.py --excel_file <EXCEL_FILE> --base_folder <BASE_FOLDER> --output_dir <OUTPUT_DIR> --template_pdf <TEMPLATE_PDF>
-    python -W ignore medical_report_generation.py --excel_file data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf data_demo/PDF_template.pdf
+    python medical_report_generation.py --excel_file /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/AbdomenAtlas3.0.csv --base_folder /mnt/realccvl15/zzhou82/data/AbdomenAtlas/image_mask/AbdomenAtlasX/AbdomenAtlasX --output_dir /mnt/T8/error_analysis/PDF_Report --template_pdf /mnt/realccvl15/zzhou82/project/OncoKit/utils/data_demo/PDF_template.pdf
 
 
 ARGUMENTS:
@@ -442,7 +442,7 @@ def generate_pdf_with_template(
         temp_pdf.drawString(left_margin, y_position, "AI MEASUREMENTS")
         y_position -= line_height
         table_data = [
-            ["", "organ Volume (cc)", "total lesion #", "total lesion volume (cc)"], 
+            ["", "organ volume (cc)", "total lesion #", "total lesion volume (cc)"], 
             [
                 "liver", 
                 extracted_data.iloc[7], 
@@ -703,8 +703,7 @@ def main(args):
 
     try:
         data = read_excel(args.excel_file)
-        num_cores = args.num_core if args.num_core > 0 else multiprocessing.cpu_count()
-        print(f">> Using {num_cores} CPU cores.")
+        num_cores = args.num_core if args.num_core > 0 else min(multiprocessing.cpu_count(), 16)
 
         # 🔥 STEP 1: PARALLEL TASK PREPARATION WITH PROGRESS BAR
         tasks = []
