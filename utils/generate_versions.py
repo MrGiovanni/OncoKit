@@ -326,7 +326,7 @@ def compress_existing_version(args):
             futures = {executor.submit(event_compression, pid, args): pid
                     for pid in folder_names}
             
-            for future in tqdm(as_completed(futures), total=len(futures)):
+            for future in tqdm(as_completed(futures), total=len(futures), ncols=80):
                 folder = futures[future]
                 try:
                     future.result()
